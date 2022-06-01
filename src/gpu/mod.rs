@@ -20,9 +20,16 @@ mod nogpu;
 #[cfg(not(any(feature = "cuda", feature = "opencl")))]
 pub use self::nogpu::*;
 
+// This is a hack, so that the same traits can be used for the GPU and non-GPU code path.
 #[cfg(any(feature = "cuda", feature = "opencl"))]
-pub use ec_gpu::GpuEngine;
+pub use ec_gpu::{GpuField, GpuName};
 #[cfg(not(any(feature = "cuda", feature = "opencl")))]
-pub trait GpuEngine {}
+pub trait GpuField {}
 #[cfg(not(any(feature = "cuda", feature = "opencl")))]
-impl<E: pairing::Engine> GpuEngine for E {}
+pub trait GpuName {}
+#[cfg(not(any(feature = "cuda", feature = "opencl")))]
+impl GpuName for blstrs::G1Affine {}
+#[cfg(not(any(feature = "cuda", feature = "opencl")))]
+impl GpuName for blstrs::G2Affine {}
+#[cfg(not(any(feature = "cuda", feature = "opencl")))]
+impl GpuField for blstrs::Scalar {}

@@ -1,6 +1,7 @@
 use super::{create_proof_batch_priority, create_random_proof_batch_priority};
 use super::{ParameterSource, Proof};
 use crate::{gpu, Circuit, SynthesisError};
+use group::prime::PrimeCurveAffine;
 use pairing::MultiMillerLoop;
 use rand_core::RngCore;
 
@@ -11,8 +12,11 @@ pub fn create_proof<E, C, P: ParameterSource<E>>(
     s: E::Fr,
 ) -> Result<Proof<E>, SynthesisError>
 where
-    E: gpu::GpuEngine + MultiMillerLoop,
+    E: MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
+    E::Fr: gpu::GpuField,
+    E::G1Affine: PrimeCurveAffine + gpu::GpuName,
+    E::G2Affine: PrimeCurveAffine + gpu::GpuName,
 {
     let proofs =
         create_proof_batch_priority::<E, C, P>(vec![circuit], params, vec![r], vec![s], false)?;
@@ -25,9 +29,12 @@ pub fn create_random_proof<E, C, R, P: ParameterSource<E>>(
     rng: &mut R,
 ) -> Result<Proof<E>, SynthesisError>
 where
-    E: gpu::GpuEngine + MultiMillerLoop,
+    E: MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
     R: RngCore,
+    E::Fr: gpu::GpuField,
+    E::G1Affine: PrimeCurveAffine + gpu::GpuName,
+    E::G2Affine: PrimeCurveAffine + gpu::GpuName,
 {
     let proofs =
         create_random_proof_batch_priority::<E, C, R, P>(vec![circuit], params, rng, false)?;
@@ -41,8 +48,11 @@ pub fn create_proof_batch<E, C, P: ParameterSource<E>>(
     s: Vec<E::Fr>,
 ) -> Result<Vec<Proof<E>>, SynthesisError>
 where
-    E: gpu::GpuEngine + MultiMillerLoop,
+    E: MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
+    E::Fr: gpu::GpuField,
+    E::G1Affine: PrimeCurveAffine + gpu::GpuName,
+    E::G2Affine: PrimeCurveAffine + gpu::GpuName,
 {
     create_proof_batch_priority::<E, C, P>(circuits, params, r, s, false)
 }
@@ -53,9 +63,12 @@ pub fn create_random_proof_batch<E, C, R, P: ParameterSource<E>>(
     rng: &mut R,
 ) -> Result<Vec<Proof<E>>, SynthesisError>
 where
-    E: gpu::GpuEngine + MultiMillerLoop,
+    E: MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
     R: RngCore,
+    E::Fr: gpu::GpuField,
+    E::G1Affine: PrimeCurveAffine + gpu::GpuName,
+    E::G2Affine: PrimeCurveAffine + gpu::GpuName,
 {
     create_random_proof_batch_priority::<E, C, R, P>(circuits, params, rng, false)
 }
@@ -67,8 +80,11 @@ pub fn create_proof_in_priority<E, C, P: ParameterSource<E>>(
     s: E::Fr,
 ) -> Result<Proof<E>, SynthesisError>
 where
-    E: gpu::GpuEngine + MultiMillerLoop,
+    E: MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
+    E::Fr: gpu::GpuField,
+    E::G1Affine: PrimeCurveAffine + gpu::GpuName,
+    E::G2Affine: PrimeCurveAffine + gpu::GpuName,
 {
     let proofs =
         create_proof_batch_priority::<E, C, P>(vec![circuit], params, vec![r], vec![s], true)?;
@@ -81,9 +97,12 @@ pub fn create_random_proof_in_priority<E, C, R, P: ParameterSource<E>>(
     rng: &mut R,
 ) -> Result<Proof<E>, SynthesisError>
 where
-    E: gpu::GpuEngine + MultiMillerLoop,
+    E: MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
     R: RngCore,
+    E::Fr: gpu::GpuField,
+    E::G1Affine: PrimeCurveAffine + gpu::GpuName,
+    E::G2Affine: PrimeCurveAffine + gpu::GpuName,
 {
     let proofs =
         create_random_proof_batch_priority::<E, C, R, P>(vec![circuit], params, rng, true)?;
@@ -97,8 +116,11 @@ pub fn create_proof_batch_in_priority<E, C, P: ParameterSource<E>>(
     s: Vec<E::Fr>,
 ) -> Result<Vec<Proof<E>>, SynthesisError>
 where
-    E: gpu::GpuEngine + MultiMillerLoop,
+    E: MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
+    E::Fr: gpu::GpuField,
+    E::G1Affine: PrimeCurveAffine + gpu::GpuName,
+    E::G2Affine: PrimeCurveAffine + gpu::GpuName,
 {
     create_proof_batch_priority::<E, C, P>(circuits, params, r, s, true)
 }
@@ -109,9 +131,12 @@ pub fn create_random_proof_batch_in_priority<E, C, R, P: ParameterSource<E>>(
     rng: &mut R,
 ) -> Result<Vec<Proof<E>>, SynthesisError>
 where
-    E: gpu::GpuEngine + MultiMillerLoop,
+    E: MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
     R: RngCore,
+    E::Fr: gpu::GpuField,
+    E::G1Affine: PrimeCurveAffine + gpu::GpuName,
+    E::G2Affine: PrimeCurveAffine + gpu::GpuName,
 {
     create_random_proof_batch_priority::<E, C, R, P>(circuits, params, rng, true)
 }

@@ -359,9 +359,10 @@ impl Engine for DummyEngine {
 }
 
 #[cfg(any(feature = "cuda", feature = "opencl"))]
-impl ec_gpu::GpuEngine for DummyEngine {
-    type Scalar = Fr;
-    type Fp = Fr;
+impl ec_gpu::GpuName for Fr {
+    fn name() -> String {
+        "dummy_fr".to_string()
+    }
 }
 
 #[cfg(any(feature = "cuda", feature = "opencl"))]
@@ -378,6 +379,12 @@ impl ec_gpu::GpuField for Fr {
         vec![MODULUS_R.0]
     }
 }
+
+#[cfg(not(any(feature = "cuda", feature = "opencl")))]
+impl crate::gpu::GpuName for Fr {}
+
+#[cfg(not(any(feature = "cuda", feature = "opencl")))]
+impl crate::gpu::GpuField for Fr {}
 
 impl MillerLoopResult for Fr {
     type Gt = Fr;
