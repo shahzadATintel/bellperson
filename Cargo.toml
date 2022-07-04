@@ -89,3 +89,6 @@ members = [
 
 [build-dependencies]
 rustversion = "1.0.6"
+
+[patch.crates-io]
+ec-gpu-gen = { git = "https://github.com/filecoin-project/ec-gpu", branch = "tmp-kernel-refactor" }
