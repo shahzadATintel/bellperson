@@ -32,6 +32,10 @@ where
             |lc| lc + CS::one(),
             |lc| lc + input,
         );
+        if num.get_value().is_some() {
+            // while proving we have actual scalars
+            println!("actual num: {:?}", num.get_value());
+        }
     }
 
     Ok(())
