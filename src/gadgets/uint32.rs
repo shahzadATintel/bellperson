@@ -161,6 +161,39 @@ impl UInt32 {
         }
     }
 
+    pub fn xor_no_cs(&self, other: Self) -> Self {
+        let new_value = match (self.value, other.value) {
+            (Some(a), Some(b)) => Some(a ^ b),
+            _ => None,
+        };
+        if new_value.is_none() {
+            panic!("None values to XOR")
+        }
+        UInt32::constant(new_value.unwrap())
+    }
+
+    pub fn and_no_cs(&self, other: Self) -> Self {
+        let new_value = match (self.value, other.value) {
+            (Some(a), Some(b)) => Some(a & b),
+            _ => None,
+        };
+        if new_value.is_none() {
+            panic!("None values to AND")
+        }
+        UInt32::constant(new_value.unwrap())
+    }
+
+    pub fn not_no_cs(&self) -> Self {
+        let new_value = match self.value {
+            Some(a) => Some(!a),
+            _ => None,
+        };
+        if new_value.is_none() {
+            panic!("None value to NOT")
+        }
+        UInt32::constant(new_value.unwrap())
+    }
+
     pub fn rotr(&self, by: usize) -> Self {
         let by = by % 32;
 
@@ -275,6 +308,30 @@ impl UInt32 {
             |a, b, c| (a & b) ^ ((!a) & c),
             |cs, i, a, b, c| Boolean::sha256_ch(cs.namespace(|| format!("ch {}", i)), a, b, c),
         )
+    }
+
+    pub fn and<Scalar, CS>(&self, mut cs: CS, other: &Self) -> Result<Self, SynthesisError>
+    where
+        Scalar: PrimeField,
+        CS: ConstraintSystem<Scalar>,
+    {
+        let new_value = match (self.value, other.value) {
+            (Some(a), Some(b)) => Some(a & b),
+            _ => None,
+        };
+
+        let bits = self
+            .bits
+            .iter()
+            .zip(other.bits.iter())
+            .enumerate()
+            .map(|(i, (a, b))| Boolean::and(cs.namespace(|| format!("and of bit {}", i)), a, b))
+            .collect::<Result<_, _>>()?;
+
+        Ok(UInt32 {
+            bits,
+            value: new_value,
+        })
     }
 
     /// XOR this `UInt32` with another `UInt32`
