@@ -184,10 +184,7 @@ impl UInt32 {
     }
 
     pub fn not_no_cs(&self) -> Self {
-        let new_value = match self.value {
-            Some(a) => Some(!a),
-            _ => None,
-        };
+        let new_value = self.value.map(|a| !a);
         if new_value.is_none() {
             panic!("None value to NOT")
         }

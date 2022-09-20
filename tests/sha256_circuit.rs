@@ -1,3 +1,5 @@
+#![allow(clippy::many_single_char_names)]
+
 use bellperson::gadgets::boolean::{AllocatedBit, Boolean};
 use bellperson::gadgets::multieq::MultiEq;
 use bellperson::gadgets::multipack::{
@@ -125,13 +127,13 @@ fn sha256_process_single_block(block: &[Boolean], current_hash: [u32; 8]) -> [u3
         a = UInt32::constant((temp1 + temp2) as u32);
     }
 
-    let h0 = (current_hash[0] as usize + uint32_to_usize(a.clone())) as u32;
-    let h1 = (current_hash[1] as usize + uint32_to_usize(b.clone())) as u32;
-    let h2 = (current_hash[2] as usize + uint32_to_usize(c.clone())) as u32;
-    let h3 = (current_hash[3] as usize + uint32_to_usize(d.clone())) as u32;
-    let h4 = (current_hash[4] as usize + uint32_to_usize(e.clone())) as u32;
-    let h5 = (current_hash[5] as usize + uint32_to_usize(f.clone())) as u32;
-    let h6 = (current_hash[6] as usize + uint32_to_usize(g.clone())) as u32;
+    let h0 = (current_hash[0] as usize + uint32_to_usize(a)) as u32;
+    let h1 = (current_hash[1] as usize + uint32_to_usize(b)) as u32;
+    let h2 = (current_hash[2] as usize + uint32_to_usize(c)) as u32;
+    let h3 = (current_hash[3] as usize + uint32_to_usize(d)) as u32;
+    let h4 = (current_hash[4] as usize + uint32_to_usize(e)) as u32;
+    let h5 = (current_hash[5] as usize + uint32_to_usize(f)) as u32;
+    let h6 = (current_hash[6] as usize + uint32_to_usize(g)) as u32;
     let h7 = (current_hash[7] as usize + h) as u32;
 
     [h0, h1, h2, h3, h4, h5, h6, h7]
@@ -151,20 +153,20 @@ fn sha256_hashing(message: [u8; PREIMAGE_LENGTH_BITS / 8]) -> [u8; SHA256_HASH_L
 
     let message_bits = bytes_to_bits(message.to_vec().as_slice())
         .into_iter()
-        .map(|bit| Boolean::constant(bit))
+        .map(Boolean::constant)
         .collect::<Vec<Boolean>>();
 
     let l = message.len() * 8;
     let mut k = 0;
     while (l + 1 + k + 64) % 512 != 0 {
-        k = k + 1
+        k += 1
     }
 
     let k_zeroes = vec![Boolean::constant(false); k];
 
     let l_bits = bytes_to_bits((l as u64).to_be_bytes().to_vec().as_slice())
         .into_iter()
-        .map(|bit| Boolean::constant(bit))
+        .map(Boolean::constant)
         .collect::<Vec<Boolean>>();
 
     let padded_message = [
@@ -181,9 +183,8 @@ fn sha256_hashing(message: [u8; PREIMAGE_LENGTH_BITS / 8]) -> [u8; SHA256_HASH_L
         curr_hash = sha256_process_single_block(chunk, curr_hash);
     }
 
-    let result = curr_hash
-        .iter()
-        .flat_map(|word| word.clone().to_be_bytes().to_vec())
+    let result = IntoIterator::into_iter(curr_hash)
+        .flat_map(|word| word.to_be_bytes().to_vec())
         .collect::<Vec<u8>>();
 
     // we know definitely that result is actually a 8 32-bit words
@@ -239,25 +240,13 @@ where
 
     let mut cs = MultiEq::new(&mut cs);
 
-    // if block is undefined, we consider that it is all zeroes, otherwise we are not able to synthesize circuit
-    let block = block
-        .into_iter()
-        .map(|bit| {
-            let bit = match bit {
-                None => false,
-                Some(bit) => *bit,
-            };
-            bit
-        })
-        .collect::<Vec<bool>>();
-
     let block_bits_constrained = block
-        .into_iter()
+        .iter()
         .enumerate()
         .map(|(index, preimage_bit)| {
             AllocatedBit::alloc(
                 cs.namespace(|| format!("preimage bit {}", index)),
-                Some(preimage_bit),
+                *preimage_bit,
             )
             .map(Into::into)
         })
@@ -425,19 +414,7 @@ where
     let block_hash = current_hash_constrained
         .chunks(32)
         .into_iter()
-        .zip(
-            [
-                a.clone(),
-                b.clone(),
-                c.clone(),
-                d.clone(),
-                e.clone(),
-                f.clone(),
-                g.clone(),
-                h.clone(),
-            ]
-            .iter(),
-        )
+        .zip([a, b, c, d, e, f, g, h].iter())
         .enumerate()
         .map(|(index, (chunk, word))| {
             UInt32::addmany(
@@ -475,7 +452,7 @@ impl<Scalar: PrimeField> Circuit<Scalar> for Sha256Circuit {
         let preimage_bits: Vec<Option<bool>> = match self.preimage {
             Some(preimage) => bytes_to_bits(preimage.to_vec().as_slice())
                 .into_iter()
-                .map(|bit| Some(bit))
+                .map(Some)
                 .collect::<Vec<Option<bool>>>(),
             None => vec![None; PREIMAGE_LENGTH_BITS],
         };
@@ -486,20 +463,20 @@ impl<Scalar: PrimeField> Circuit<Scalar> for Sha256Circuit {
         let l = preimage_bits.len();
         let mut k = 0;
         while (l + 1 + k + 64) % 512 != 0 {
-            k = k + 1
+            k += 1
         }
 
         let k_zeroes = vec![Some(false); k];
 
         let l_bits = bytes_to_bits((l as u64).to_be_bytes().to_vec().as_slice())
             .into_iter()
-            .map(|bit| Some(bit))
+            .map(Some)
             .collect::<Vec<Option<bool>>>();
 
         let padded_message = [preimage_bits, vec![Some(true); 1], k_zeroes, l_bits].concat();
 
         // Processing
-        let mut cur_hash = IV.iter().map(|x| UInt32::constant(x.clone())).collect();
+        let mut cur_hash = IV.iter().map(|x| UInt32::constant(*x)).collect();
         for (index, chunk) in padded_message.chunks(512).enumerate() {
             cur_hash = sha256_process_block(
                 cs.namespace(|| format!("sha256 block processing {}", index)),
@@ -551,7 +528,7 @@ fn end_to_end_sha256_test() {
             generate_random_parameters(circuit_prover.clone(), &mut rng)
                 .expect("can't generate global parameters (circuit prover)")
         } else {
-            generate_random_parameters(circuit_verifier.clone(), &mut rng)
+            generate_random_parameters(circuit_verifier, &mut rng)
                 .expect("can't generate global parameters (circuit verifier)")
         };
 
@@ -595,11 +572,11 @@ fn sha256(message: Vec<u8>) -> Vec<u8> {
         });
 
     let mut sha256 = Sha256::new();
-    sha256.update(message.clone());
+    sha256.update(message);
 
     let expected_hash: Vec<u8> = sha256.finalize().to_vec();
     let hash = sha256_hashing(message).to_vec();
     assert_eq!(expected_hash, hash);
 
-    return hash;
+    hash
 }

@@ -2,21 +2,19 @@ use bellperson::gadgets::boolean::{AllocatedBit, Boolean};
 use bellperson::gadgets::multieq::MultiEq;
 use bellperson::gadgets::multipack;
 use bellperson::gadgets::multipack::{bytes_to_bits_le, compute_multipacking};
-use bellperson::gadgets::num::AllocatedNum;
 use bellperson::gadgets::uint32::UInt32;
 use bellperson::groth16::{
     create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof,
     Parameters, Proof,
 };
 use bellperson::{Circuit, ConstraintSystem, SynthesisError};
-use bitvec::macros::internal::u8_from_le_bits;
 use bitvec::order::Lsb0;
 use bitvec::view::BitView;
 use blstrs::{Bls12, Scalar};
 use ff::PrimeField;
 use rand_core::OsRng;
-use rc4::{consts::*, KeyInit, StreamCipher};
 use rc4::{Key, Rc4};
+use rc4::{KeyInit, StreamCipher};
 use std::convert::TryInto;
 
 const KEY_BIT_LENGTH: usize = 40;
@@ -26,34 +24,32 @@ fn rc4_encryption(key: Vec<u8>, plaintext: Vec<u8>) -> Vec<u8> {
     let mut state: [u8; 256] = [0x00; 256];
 
     // KSA
-    for index in 0..256 {
-        state[index] = index as u8;
+    for (index, state_element) in state.iter_mut().enumerate() {
+        *state_element = index as u8
     }
 
     let mut j: u32 = 0;
 
     // mix state bytes
     for state_index in 0..256 {
-        j = (j + (state[state_index] as u32) + (key[state_index % key.len()] as u32))
-            % 256;
+        j = (j + (state[state_index] as u32) + (key[state_index % key.len()] as u32)) % 256;
         state.swap(state_index, j as usize);
     }
 
     let mut i: u32 = 0;
     let mut j: u32 = 0;
-    let mut result: Vec<u8> = plaintext.clone();
+    let mut result: Vec<u8> = plaintext;
 
-    for index in 0..plaintext.len() {
+    for result_element in result.iter_mut() {
         // gamma generation
         i = (i + 1) % 256;
         j = (j + state[i as usize] as u32) % 256;
         state.swap(i as usize, j as usize);
-        let gamma_index: u32 =
-            (state[i as usize] as u32 + state[j as usize] as u32) % 256;
+        let gamma_index: u32 = (state[i as usize] as u32 + state[j as usize] as u32) % 256;
         let gamma = state[gamma_index as usize];
 
         // actual encryption in stream ciphers is XORing generated gamma with plaintext
-        result[index] ^= gamma;
+        *result_element ^= gamma;
     }
     result
 }
@@ -69,7 +65,7 @@ fn test_rc4_circuit() {
 
         // reference RC4 implementation
         let mut rc4 = Rc4::new(&Key::from(key));
-        let mut expected_ciphertext = plaintext.clone(); // initially ciphertext buffer should contain plaintext
+        let mut expected_ciphertext = plaintext; // initially ciphertext buffer should contain plaintext
         rc4.apply_keystream(&mut expected_ciphertext); // encrypts ciphertext buffer in place
 
         // self-made RC4 implementation
@@ -87,7 +83,7 @@ fn test_rc4_circuit() {
         }
         // Generate global parameters common for both prover and verifier
         let parameters: Parameters<Bls12> = if use_verifier_circuit_to_generate_params {
-            generate_random_parameters(circuit_verifier.clone(), &mut rng)
+            generate_random_parameters(circuit_verifier, &mut rng)
                 .expect("can't generate global parameters")
         } else {
             generate_random_parameters(circuit_prover.clone(), &mut rng)
@@ -131,7 +127,7 @@ fn test_rc4_circuit() {
         }
         // Generate global parameters common for both prover and verifier
         let parameters: Parameters<Bls12> = if use_verifier_circuit_to_generate_params {
-            generate_random_parameters(circuit_verifier.clone(), &mut rng)
+            generate_random_parameters(circuit_verifier, &mut rng)
                 .expect("can't generate global parameters")
         } else {
             generate_random_parameters(circuit_prover.clone(), &mut rng)
@@ -241,10 +237,7 @@ impl RC4Circuit {
 
 // Synthesize circuit that enforces RC4 encryption operation
 impl<Scalar: PrimeField> Circuit<Scalar> for RC4Circuit {
-    fn synthesize<CS: ConstraintSystem<Scalar>>(
-        self,
-        mut cs: &mut CS,
-    ) -> Result<(), SynthesisError> {
+    fn synthesize<CS: ConstraintSystem<Scalar>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
         fn uint32_to_usize(value: UInt32) -> usize {
             boolean_slice_to_usize(value.into_bits().as_slice())
         }
@@ -264,12 +257,7 @@ impl<Scalar: PrimeField> Circuit<Scalar> for RC4Circuit {
         let key_bits: Vec<Option<bool>> = if self.key.is_none() {
             vec![None; KEY_BIT_LENGTH]
         } else {
-            self.key
-                .unwrap()
-                .to_vec()
-                .into_iter()
-                .map(|key_bit| Some(key_bit))
-                .collect()
+            self.key.unwrap().to_vec().into_iter().map(Some).collect()
         };
 
         let plaintext_bits: Vec<Option<bool>> = if self.plaintext.is_none() {
@@ -279,7 +267,7 @@ impl<Scalar: PrimeField> Circuit<Scalar> for RC4Circuit {
                 .unwrap()
                 .to_vec()
                 .into_iter()
-                .map(|plaintext_bit| Some(plaintext_bit))
+                .map(Some)
                 .collect()
         };
 
@@ -306,8 +294,8 @@ impl<Scalar: PrimeField> Circuit<Scalar> for RC4Circuit {
 
         // KSA
         let mut state: [u8; 256] = [0x00; 256];
-        for index in 0..256 {
-            state[index] = index as u8;
+        for (index, state_element) in state.iter_mut().enumerate() {
+            *state_element = index as u8
         }
 
         let mut state_bits_constrained = (0..256)
@@ -387,8 +375,7 @@ impl<Scalar: PrimeField> Circuit<Scalar> for RC4Circuit {
         for byte_index in 0..PLAINTEXT_BIT_LENGTH / 8 {
             let i: UInt32 = {
                 i_index = (i_index + 1).rem_euclid(256);
-                let i = UInt32::constant(i_index as u32);
-                i
+                UInt32::constant(i_index as u32)
             };
             let i_usize = uint32_to_usize(i.clone());
             let j: UInt32 = {
@@ -457,10 +444,7 @@ impl<Scalar: PrimeField> Circuit<Scalar> for RC4Circuit {
                 .collect();
             xor_result.push(single_byte_xor_result);
         }
-        let ciphertext = xor_result
-            .into_iter()
-            .flat_map(|x| x)
-            .collect::<Vec<Boolean>>();
+        let ciphertext = xor_result.into_iter().flatten().collect::<Vec<Boolean>>();
 
         // Expose final result of computations to CS
         multipack::pack_into_inputs(cs.namespace(|| "pack result"), &ciphertext)
