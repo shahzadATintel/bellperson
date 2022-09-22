@@ -40,157 +40,6 @@ const IV: [u32; 8] = [
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
 ];
 
-fn uint32_to_usize(value: UInt32) -> usize {
-    boolean_slice_to_usize(value.into_bits().as_slice())
-}
-
-fn boolean_slice_to_usize(slice: &[Boolean]) -> usize {
-    let mut result = 0usize;
-    for (i, bit) in slice.iter().enumerate() {
-        if let Some(true) = bit.get_value() {
-            result += 1 << i;
-        }
-    }
-    result
-}
-
-fn sha256_process_single_block(block: &[Boolean], current_hash: [u32; 8]) -> [u32; 8] {
-    assert_eq!(block.len(), 512);
-
-    let mut w = vec![UInt32::constant(0); 64];
-    for index in 0..16 {
-        w[index] = UInt32::from_bits_be(&block[index * 32..index * 32 + 32]);
-    }
-
-    for index in 16..64 {
-        //s0 := (w[i-15] rightrotate  7) xor (w[i-15] rightrotate 18) xor (w[i-15] rightshift  3)
-        let s0 = w[index - 15]
-            .rotr(7)
-            .xor_no_cs(w[index - 15].rotr(18))
-            .xor_no_cs(w[index - 15].shr(3));
-        //s1 := (w[i-2] rightrotate 17) xor (w[i-2] rightrotate 19) xor (w[i-2] rightshift 10)
-        let s1 = w[index - 2]
-            .rotr(17)
-            .xor_no_cs(w[index - 2].rotr(19))
-            .xor_no_cs(w[index - 2].shr(10));
-        //w[i] := w[i-16] + s0 + w[i-7] + s1
-        let sum = uint32_to_usize(w[index - 16].clone())
-            + uint32_to_usize(s0)
-            + uint32_to_usize(w[index - 7].clone())
-            + uint32_to_usize(s1);
-        w[index] = UInt32::constant(sum as u32);
-    }
-
-    let mut a = UInt32::constant(current_hash[0]);
-    let mut b = UInt32::constant(current_hash[1]);
-    let mut c = UInt32::constant(current_hash[2]);
-    let mut d = UInt32::constant(current_hash[3]);
-    let mut e = UInt32::constant(current_hash[4]);
-    let mut f = UInt32::constant(current_hash[5]);
-    let mut g = UInt32::constant(current_hash[6]);
-    let mut h = current_hash[7] as usize;
-
-    for index in 0..64 {
-        //S1 := (e rightrotate 6) xor (e rightrotate 11) xor (e rightrotate 25)
-        let s1 = e.rotr(6).xor_no_cs(e.rotr(11)).xor_no_cs(e.rotr(25));
-
-        //ch := (e and f) xor ((not e) and g)
-        let ch = e
-            .and_no_cs(f.clone())
-            .xor_no_cs(e.not_no_cs().and_no_cs(g.clone()));
-
-        //temp1 := h + S1 + ch + k[i] + w[i]
-        let temp1 = h
-            + uint32_to_usize(s1)
-            + uint32_to_usize(ch)
-            + (ROUND_CONSTANTS[index] as usize)
-            + uint32_to_usize(w[index].clone());
-
-        //S0 := (a rightrotate 2) xor (a rightrotate 13) xor (a rightrotate 22)
-        let s0 = a.rotr(2).xor_no_cs(a.rotr(13).xor_no_cs(a.rotr(22)));
-
-        //maj := (a and b) xor (a and c) xor (b and c)
-        let maj = a
-            .and_no_cs(b.clone())
-            .xor_no_cs(a.and_no_cs(c.clone()).xor_no_cs(b.and_no_cs(c.clone())));
-
-        //temp2 := S0 + maj
-        let temp2 = uint32_to_usize(s0) + uint32_to_usize(maj);
-
-        h = uint32_to_usize(g.clone());
-        g = f.clone();
-        f = e.clone();
-        e = UInt32::constant((uint32_to_usize(d.clone()) + temp1) as u32);
-        d = c.clone();
-        c = b.clone();
-        b = a.clone();
-        a = UInt32::constant((temp1 + temp2) as u32);
-    }
-
-    let h0 = (current_hash[0] as usize + uint32_to_usize(a)) as u32;
-    let h1 = (current_hash[1] as usize + uint32_to_usize(b)) as u32;
-    let h2 = (current_hash[2] as usize + uint32_to_usize(c)) as u32;
-    let h3 = (current_hash[3] as usize + uint32_to_usize(d)) as u32;
-    let h4 = (current_hash[4] as usize + uint32_to_usize(e)) as u32;
-    let h5 = (current_hash[5] as usize + uint32_to_usize(f)) as u32;
-    let h6 = (current_hash[6] as usize + uint32_to_usize(g)) as u32;
-    let h7 = (current_hash[7] as usize + h) as u32;
-
-    [h0, h1, h2, h3, h4, h5, h6, h7]
-}
-
-fn sha256_hashing(message: [u8; PREIMAGE_LENGTH_BITS / 8]) -> [u8; SHA256_HASH_LENGTH_BITS / 8] {
-    assert_eq!(8 * message.len() % 512, 0);
-
-    /*
-     Pre-processing (Padding):
-        begin with the original message of length L bits
-        append a single '1' bit
-        append K '0' bits, where K is the minimum number >= 0 such that (L + 1 + K + 64) is a multiple of 512
-        append L as a 64-bit big-endian integer, making the total post-processed length a multiple of 512 bits
-        such that the bits in the message are: <original message of length L> 1 <K zeros> <L as 64 bit integer> , (the number of bits will be a multiple of 512)
-    */
-
-    let message_bits = bytes_to_bits(message.to_vec().as_slice())
-        .into_iter()
-        .map(Boolean::constant)
-        .collect::<Vec<Boolean>>();
-
-    let l = message.len() * 8;
-    let mut k = 0;
-    while (l + 1 + k + 64) % 512 != 0 {
-        k += 1
-    }
-
-    let k_zeroes = vec![Boolean::constant(false); k];
-
-    let l_bits = bytes_to_bits((l as u64).to_be_bytes().to_vec().as_slice())
-        .into_iter()
-        .map(Boolean::constant)
-        .collect::<Vec<Boolean>>();
-
-    let padded_message = [
-        message_bits,
-        vec![Boolean::constant(true); 1],
-        k_zeroes,
-        l_bits,
-    ]
-    .concat();
-
-    // Processing
-    let mut curr_hash = IV;
-    for chunk in padded_message.chunks(512) {
-        curr_hash = sha256_process_single_block(chunk, curr_hash);
-    }
-
-    let result = IntoIterator::into_iter(curr_hash)
-        .flat_map(|word| word.to_be_bytes().to_vec())
-        .collect::<Vec<u8>>();
-
-    // we know definitely that result is actually a 8 32-bit words
-    result.try_into().unwrap()
-}
-
 #[derive(Default, Clone, Debug)]
 struct Sha256Circuit {
     preimage: Option<[u8; PREIMAGE_LENGTH_BITS / 8]>,
@@ -503,15 +352,15 @@ impl<Scalar: PrimeField> Circuit<Scalar> for Sha256Circuit {
 #[test]
 fn end_to_end_sha256_test() {
     fn positive_test(preimage: Vec<u8>, expected_hash: Vec<u8>, use_circuit_prover: bool) {
-        println!("positive test");
+        println!("end_to_end_sha256_test positive ... ");
         assert!(test(preimage, expected_hash, use_circuit_prover));
-        println!("#############");
+        println!("ok");
     }
 
     fn negative_test(preimage: Vec<u8>, expected_hash: Vec<u8>, use_circuit_prover: bool) {
-        println!("negative test");
+        println!("end_to_end_sha256_test negative ... ");
         assert!(!test(preimage, expected_hash, use_circuit_prover));
-        println!("#############");
+        println!("ok");
     }
 
     fn test(preimage: Vec<u8>, expected_hash: Vec<u8>, use_circuit_prover: bool) -> bool {
@@ -560,23 +409,8 @@ fn end_to_end_sha256_test() {
     negative_test(preimage, expected_hash, true);
 }
 
-// just to check that self-made sha256 implementation works as expected
 fn sha256(message: Vec<u8>) -> Vec<u8> {
-    let message: [u8; PREIMAGE_LENGTH_BITS / 8] =
-        message.try_into().unwrap_or_else(|v: Vec<u8>| {
-            panic!(
-                "Expected a Vec of length {} but it was {}",
-                PREIMAGE_LENGTH_BITS / 8,
-                v.len()
-            )
-        });
-
     let mut sha256 = Sha256::new();
     sha256.update(message);
-
-    let expected_hash: Vec<u8> = sha256.finalize().to_vec();
-    let hash = sha256_hashing(message).to_vec();
-    assert_eq!(expected_hash, hash);
-
-    hash
+    sha256.finalize().to_vec()
 }

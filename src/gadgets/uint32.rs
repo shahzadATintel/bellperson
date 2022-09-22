@@ -161,36 +161,6 @@ impl UInt32 {
         }
     }
 
-    pub fn xor_no_cs(&self, other: Self) -> Self {
-        let new_value = match (self.value, other.value) {
-            (Some(a), Some(b)) => Some(a ^ b),
-            _ => None,
-        };
-        if new_value.is_none() {
-            panic!("None values to XOR")
-        }
-        UInt32::constant(new_value.unwrap())
-    }
-
-    pub fn and_no_cs(&self, other: Self) -> Self {
-        let new_value = match (self.value, other.value) {
-            (Some(a), Some(b)) => Some(a & b),
-            _ => None,
-        };
-        if new_value.is_none() {
-            panic!("None values to AND")
-        }
-        UInt32::constant(new_value.unwrap())
-    }
-
-    pub fn not_no_cs(&self) -> Self {
-        let new_value = self.value.map(|a| !a);
-        if new_value.is_none() {
-            panic!("None value to NOT")
-        }
-        UInt32::constant(new_value.unwrap())
-    }
-
     pub fn rotr(&self, by: usize) -> Self {
         let by = by % 32;
 
