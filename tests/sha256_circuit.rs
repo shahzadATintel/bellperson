@@ -14,7 +14,6 @@ use bellperson::{Circuit, ConstraintSystem, SynthesisError};
 use blstrs::{Bls12, Scalar};
 use digest::Digest;
 use ff::PrimeField;
-use itertools::Itertools;
 use rand_core::OsRng;
 use sha2::Sha256;
 use std::convert::TryInto;
@@ -45,39 +44,9 @@ struct Sha256Circuit {
     preimage: Option<[u8; PREIMAGE_LENGTH_BITS / 8]>,
 }
 
-fn uint32_into_boolean_vec_le<Scalar: PrimeField, CS: ConstraintSystem<Scalar>>(
-    mut cs: CS,
-    value: Option<UInt32>,
-) -> Result<Vec<Boolean>, SynthesisError> {
-    let values = match value {
-        Some(value) => {
-            let mut tmp = Vec::with_capacity(32);
-            for bit in value.into_bits() {
-                tmp.push(bit.get_value());
-            }
-
-            tmp
-        }
-        None => vec![None; 32],
-    };
-
-    let bits = values
-        .into_iter()
-        .enumerate()
-        .map(|(i, b)| {
-            Ok(Boolean::from(AllocatedBit::alloc(
-                cs.namespace(|| format!("bit {}", i)),
-                b,
-            )?))
-        })
-        .collect::<Result<Vec<_>, SynthesisError>>()?;
-
-    Ok(bits)
-}
-
 fn sha256_process_block<Scalar, CS>(
     mut cs: CS,
-    block: &[Option<bool>],
+    block: &[Boolean],
     current_hash: Vec<UInt32>,
 ) -> Result<Vec<UInt32>, SynthesisError>
 where
@@ -89,33 +58,9 @@ where
 
     let mut cs = MultiEq::new(&mut cs);
 
-    let block_bits_constrained = block
-        .iter()
-        .enumerate()
-        .map(|(index, preimage_bit)| {
-            AllocatedBit::alloc(
-                cs.namespace(|| format!("preimage bit {}", index)),
-                *preimage_bit,
-            )
-            .map(Into::into)
-        })
-        .collect::<Result<Vec<Boolean>, SynthesisError>>()?;
-
-    let current_hash_constrained: Vec<Boolean> = current_hash
-        .iter()
-        .enumerate()
-        .map(|(word_index, preimage_word)| {
-            uint32_into_boolean_vec_le(
-                cs.namespace(|| format!("preimage_word {}", word_index)),
-                Some(preimage_word.clone()),
-            )
-        })
-        .flatten_ok()
-        .collect::<Result<Vec<Boolean>, SynthesisError>>()?;
-
     let mut w = vec![UInt32::constant(0); 64];
     for index in 0..16 {
-        w[index] = UInt32::from_bits_be(&block_bits_constrained[index * 32..index * 32 + 32]);
+        w[index] = UInt32::from_bits_be(&block[index * 32..index * 32 + 32]);
     }
 
     for index in 16..64 {
@@ -260,15 +205,14 @@ where
         )?;
     }
 
-    let block_hash = current_hash_constrained
-        .chunks(32)
+    let block_hash = current_hash
         .into_iter()
         .zip([a, b, c, d, e, f, g, h].iter())
         .enumerate()
         .map(|(index, (chunk, word))| {
             UInt32::addmany(
                 cs.namespace(|| format!("current block {} hashing result", index)),
-                &[UInt32::from_bits(chunk), word.clone()],
+                &[chunk, word.clone()],
             )
         })
         .collect::<Result<Vec<UInt32>, SynthesisError>>()?;
@@ -315,14 +259,36 @@ impl<Scalar: PrimeField> Circuit<Scalar> for Sha256Circuit {
             k += 1
         }
 
-        let k_zeroes = vec![Some(false); k];
+        let k_zeroes = vec![false; k];
 
-        let l_bits = bytes_to_bits((l as u64).to_be_bytes().to_vec().as_slice())
+        let l_bits = bytes_to_bits((l as u64).to_be_bytes().to_vec().as_slice());
+
+        let preimage_bits = preimage_bits
+            .iter()
+            .enumerate()
+            .map(|(index, preimage_bit)| {
+                AllocatedBit::alloc(
+                    cs.namespace(|| format!("preimage_bits bit {}", index)),
+                    *preimage_bit,
+                )
+                .map(Into::into)
+            })
+            .collect::<Result<Vec<Boolean>, SynthesisError>>()?;
+        let k_zeroes = k_zeroes
             .into_iter()
-            .map(Some)
-            .collect::<Vec<Option<bool>>>();
-
-        let padded_message = [preimage_bits, vec![Some(true); 1], k_zeroes, l_bits].concat();
+            .map(Boolean::constant)
+            .collect::<Vec<Boolean>>();
+        let l_bits = l_bits
+            .into_iter()
+            .map(Boolean::constant)
+            .collect::<Vec<Boolean>>();
+        let padded_message = [
+            preimage_bits,
+            vec![Boolean::constant(true)],
+            k_zeroes,
+            l_bits,
+        ]
+        .concat();
 
         // Processing
         let mut cur_hash = IV.iter().map(|x| UInt32::constant(*x)).collect();
