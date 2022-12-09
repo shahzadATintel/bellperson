@@ -4,6 +4,7 @@ use ff::{Field, PrimeField};
 use group::{prime::PrimeCurveAffine, Curve, Group};
 use pairing::{Engine, MillerLoopResult, MultiMillerLoop};
 use rayon::prelude::*;
+use log::{error, info};
 
 use super::{multiscalar, PreparedVerifyingKey, Proof, VerifyingKey};
 use crate::{le_bytes_to_u64s, SynthesisError};
@@ -47,6 +48,7 @@ where
     use multiscalar::MultiscalarPrecomp;
 
     if (public_inputs.len() + 1) != pvk.ic.len() {
+        error!("SynthesisError::MalformedVerifyingKey");
         return Err(SynthesisError::MalformedVerifyingKey);
     }
 
@@ -101,7 +103,7 @@ where
 
     // Calculate the final exponentiation
     let actual = ml_all.final_exponentiation();
-
+    info!("verify_proof actual {:?}, pvk.alpha_g1_beta_g2 {:?}", actual, pvk.alpha_g1_beta_g2);
     Ok(actual == pvk.alpha_g1_beta_g2)
 }
 
@@ -129,6 +131,7 @@ where
     let num_proofs = proofs.len();
 
     if num_proofs < 2 {
+        info!("calling verify_proof, num_proofs {:?}", num_proofs);
         return verify_proof(pvk, proofs[0], &public_inputs[0]);
     }
 
@@ -139,6 +142,7 @@ where
     let mut rand_z: Vec<_> = Vec::with_capacity(proof_num);
     let mut accum_y = E::Fr::zero();
 
+    info!("verify_proofs_batch, proof_num {:?}", proof_num);
     for _ in 0..proof_num {
         use rand::Rng;
 
@@ -272,5 +276,6 @@ where
     ml_all += ml_g;
 
     let actual = ml_all.final_exponentiation();
+    info!("verify_proofs_batch actual {:?}, y {:?}", actual, y);
     Ok(actual == y)
 }
