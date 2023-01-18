@@ -359,6 +359,22 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
         Ok(())
     }
 
+    pub fn assert_zero<CS: ConstraintSystem<F>, F: PrimeField>(
+        &self,
+        mut cs: CS,
+    ) -> Result<(), SynthesisError> {
+
+        // Constrain a * 1 = 0
+        cs.enforce(
+            || "zero assertion constraint",
+            |lc| lc + self.variable,
+            |lc| lc + CS::one(),
+            |lc| lc,
+        );
+
+        Ok(())
+    }
+
     /// Takes two allocated numbers (a, b) and returns
     /// (b, a) if the condition is true, and (a, b)
     /// otherwise.
@@ -594,6 +610,25 @@ mod test {
 
             let n = AllocatedNum::alloc(&mut cs, || Ok(Fr::zero())).unwrap();
             assert!(n.assert_nonzero(&mut cs).is_err());
+        }
+    }
+
+    #[test]
+    fn test_num_zero() {
+        {
+            let mut cs = TestConstraintSystem::<Fr>::new();
+
+            let n = AllocatedNum::alloc(&mut cs, || Ok(Fr::from(3u64))).unwrap();
+            n.assert_zero(&mut cs).unwrap();
+
+            assert!(!cs.is_satisfied());
+        }
+        {
+            let mut cs = TestConstraintSystem::<Fr>::new();
+
+            let n = AllocatedNum::alloc(&mut cs, || Ok(Fr::zero())).unwrap();
+                n.assert_zero(&mut cs).unwrap();
+            assert!(cs.is_satisfied());
         }
     }
 
