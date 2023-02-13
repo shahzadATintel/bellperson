@@ -168,3 +168,151 @@ pub(crate) fn le_bytes_to_u64s(le_bytes: &[u8]) -> Vec<u64> {
         .map(|chunk| u64::from_le_bytes(chunk.try_into().unwrap()))
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use blstrs::{Bls12, Scalar as Fr};
+    use ff::Field;
+    use rand::thread_rng;
+
+    use crate::{
+        groth16::{
+            create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof,
+            Parameters,
+        },
+        util_cs::{test_cs::TestConstraintSystem, Comparable},
+    };
+
+    #[derive(Clone)]
+    struct TestudoCircuit {
+        aux: Vec<Fr>,
+        inputs: Vec<Fr>,
+        num_cons: usize,
+    }
+
+    impl TestudoCircuit {
+        fn new(num_aux: usize, num_inputs: usize, num_cons: usize) -> Self {
+            assert!(num_aux.is_power_of_two());
+            assert!(num_cons.is_power_of_two());
+            assert!(num_inputs < num_aux);
+
+            let mut rng = thread_rng();
+
+            let aux = std::iter::repeat_with(|| Fr::random(&mut rng))
+                .filter_map(|x| {
+                    if bool::from(x.is_zero()) {
+                        None
+                    } else {
+                        Some(x)
+                    }
+                })
+                .take(num_aux)
+                .collect();
+
+            let inputs = std::iter::repeat_with(|| Fr::random(&mut rng))
+                .filter_map(|x| {
+                    if bool::from(x.is_zero()) {
+                        None
+                    } else {
+                        Some(x)
+                    }
+                })
+                .take(num_inputs)
+                .collect();
+
+            TestudoCircuit {
+                aux,
+                inputs,
+                num_cons,
+            }
+        }
+
+        fn pub_inputs(&self) -> &[Fr] {
+            &self.inputs
+        }
+    }
+
+    impl Circuit<Fr> for TestudoCircuit {
+        fn synthesize<CS: ConstraintSystem<Fr>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
+            // All r1cs variables: `vars = aux || 1 || inputs`.
+            let var_values: Vec<Fr> = self.aux
+                .iter()
+                .copied()
+                .chain(std::iter::once(Fr::one()))
+                .chain(self.inputs.iter().copied())
+                .collect();
+
+            // `num_vars = num_aux + 1 + num_inputs`.
+            let num_vars = var_values.len();
+
+            // Assign variables.
+            let mut vars = Vec::<Variable>::with_capacity(num_vars);
+            for (i, aux) in self.aux.into_iter().enumerate() {
+                let aux = cs.alloc(|| format!("aux_{}", i), || Ok(aux))
+                    .expect("allocation should not fail");
+                vars.push(aux);
+            }
+            vars.push(CS::one());
+            for (i, pi) in self.inputs.into_iter().enumerate() {
+                let pi = cs.alloc_input(|| format!("pi_{}", i), || Ok(pi))
+                    .expect("allocation should not fail");
+                vars.push(pi);
+            }
+
+            // Add multiplication constraints that are satisfied for the random choice of variable
+            // values.
+            for i in 0..self.num_cons {
+                let a_idx = i % num_vars;
+                let b_idx = (i + 2) % num_vars;
+                let c_idx = (i + 3) % num_vars;
+
+                let a_var = vars[a_idx];
+                let b_var = vars[b_idx];
+                let c_var = vars[c_idx];
+
+                let a_val = &var_values[a_idx];
+                let b_val = &var_values[b_idx];
+                let c_val = &var_values[c_idx];
+                let c_coeff = a_val * b_val * c_val.invert().unwrap();
+
+                // (1)a * (1)b = (abc^-1)c
+                cs.enforce(
+                    || format!("con_{}", i),
+                    |lc| lc + a_var,
+                    |lc| lc + b_var,
+                    |lc| lc + (c_coeff, c_var),
+                );
+            }
+
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn test_testudo_circ() {
+        let exp = 4;
+        let num_aux = 1 << exp;
+        let num_cons = num_aux;
+        let num_inputs = 10;
+
+        let circ = TestudoCircuit::new(num_aux, num_inputs, num_cons);
+        let mut cs = TestConstraintSystem::<Fr>::new();
+        circ.synthesize(&mut cs).expect("synthesis failed");
+        assert!(cs.is_satisfied());
+        assert_eq!(cs.aux().len(), num_aux);
+        // Add one for `1`.
+        assert_eq!(cs.num_inputs(), num_inputs + 1);
+        assert_eq!(cs.num_constraints(), num_cons);
+
+        let circ = TestudoCircuit::new(num_aux, num_inputs, num_cons);
+        let pub_inputs = circ.pub_inputs().to_vec();
+        let mut rng = thread_rng();
+        let params: Parameters<Bls12> =
+            generate_random_parameters(circ.clone(), &mut rng).expect("param-gen failed");
+        let pvk = prepare_verifying_key::<Bls12>(&params.vk);
+        let proof = create_random_proof(circ, &params, &mut rng).expect("proving failed");
+        assert!(verify_proof(&pvk, &proof, &pub_inputs).expect("verification failed"));
+    }
+}
