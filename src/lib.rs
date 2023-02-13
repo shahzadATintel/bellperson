@@ -175,6 +175,7 @@ mod tests {
 
     use blstrs::{Bls12, Scalar as Fr};
     use ff::Field;
+    use log::debug;
     use rand::thread_rng;
 
     use crate::{
@@ -292,27 +293,39 @@ mod tests {
 
     #[test]
     fn test_testudo_circ() {
+        fil_logger::maybe_init();
+
         let exp = 4;
         let num_aux = 1 << exp;
         let num_cons = num_aux;
-        let num_inputs = 10;
+        let num_inputs = 3;
 
         let circ = TestudoCircuit::new(num_aux, num_inputs, num_cons);
         let mut cs = TestConstraintSystem::<Fr>::new();
+        debug!("vmx: synthesize circuit: start");
         circ.synthesize(&mut cs).expect("synthesis failed");
         assert!(cs.is_satisfied());
         assert_eq!(cs.aux().len(), num_aux);
         // Add one for `1`.
         assert_eq!(cs.num_inputs(), num_inputs + 1);
         assert_eq!(cs.num_constraints(), num_cons);
+        debug!("vmx: synthesize circuit: stop");
 
         let circ = TestudoCircuit::new(num_aux, num_inputs, num_cons);
         let pub_inputs = circ.pub_inputs().to_vec();
         let mut rng = thread_rng();
+        debug!("vmx: generate parameters: start");
         let params: Parameters<Bls12> =
             generate_random_parameters(circ.clone(), &mut rng).expect("param-gen failed");
+        debug!("vmx: generate parameters: stop");
+        debug!("vmx: generate verifying key: start");
         let pvk = prepare_verifying_key::<Bls12>(&params.vk);
+        debug!("vmx: generate verifying key: stop");
+        debug!("vmx: start proof: start");
         let proof = create_random_proof(circ, &params, &mut rng).expect("proving failed");
+        debug!("vmx: start proof: stop");
+        debug!("vmx: verify proof: start");
         assert!(verify_proof(&pvk, &proof, &pub_inputs).expect("verification failed"));
+        debug!("vmx: verify proof: stop");
     }
 }

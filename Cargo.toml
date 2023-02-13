@@ -38,6 +38,7 @@ ec-gpu = { version = "0.2.0" }
 ec-gpu-gen = { version = "0.5.1" }
 
 fs2 = { version = "0.4.3", optional = true }
+fil_logger = "0.1.7"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 memmap2 = "0.5.8"
