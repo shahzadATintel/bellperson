@@ -176,7 +176,7 @@ mod tests {
     use blstrs::{Bls12, Scalar as Fr};
     use ff::Field;
     use log::debug;
-    use rand::thread_rng;
+    use rand::{SeedableRng, rngs::StdRng};
 
     use crate::{
         groth16::{
@@ -199,7 +199,7 @@ mod tests {
             assert!(num_cons.is_power_of_two());
             assert!(num_inputs < num_aux);
 
-            let mut rng = thread_rng();
+            let mut rng = StdRng::seed_from_u64(1234);
 
             let aux = std::iter::repeat_with(|| Fr::random(&mut rng))
                 .filter_map(|x| {
@@ -313,7 +313,7 @@ mod tests {
 
         let circ = TestudoCircuit::new(num_aux, num_inputs, num_cons);
         let pub_inputs = circ.pub_inputs().to_vec();
-        let mut rng = thread_rng();
+        let mut rng = StdRng::seed_from_u64(1234);
         debug!("vmx: generate parameters: start");
         let params: Parameters<Bls12> =
             generate_random_parameters(circ.clone(), &mut rng).expect("param-gen failed");
