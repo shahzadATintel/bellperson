@@ -176,7 +176,7 @@ mod tests {
     use blstrs::{Bls12, Scalar as Fr};
     use ff::Field;
     use log::debug;
-    use rand::{SeedableRng, rngs::StdRng};
+    use rand::{rngs::StdRng, SeedableRng};
 
     use crate::{
         groth16::{
@@ -238,7 +238,8 @@ mod tests {
     impl Circuit<Fr> for TestudoCircuit {
         fn synthesize<CS: ConstraintSystem<Fr>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
             // All r1cs variables: `vars = aux || 1 || inputs`.
-            let var_values: Vec<Fr> = self.aux
+            let var_values: Vec<Fr> = self
+                .aux
                 .iter()
                 .copied()
                 .chain(std::iter::once(Fr::one()))
@@ -251,13 +252,15 @@ mod tests {
             // Assign variables.
             let mut vars = Vec::<Variable>::with_capacity(num_vars);
             for (i, aux) in self.aux.into_iter().enumerate() {
-                let aux = cs.alloc(|| format!("aux_{}", i), || Ok(aux))
+                let aux = cs
+                    .alloc(|| format!("aux_{}", i), || Ok(aux))
                     .expect("allocation should not fail");
                 vars.push(aux);
             }
             vars.push(CS::one());
             for (i, pi) in self.inputs.into_iter().enumerate() {
-                let pi = cs.alloc_input(|| format!("pi_{}", i), || Ok(pi))
+                let pi = cs
+                    .alloc_input(|| format!("pi_{}", i), || Ok(pi))
                     .expect("allocation should not fail");
                 vars.push(pi);
             }
