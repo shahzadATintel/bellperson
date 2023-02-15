@@ -332,7 +332,7 @@ mod tests {
             _ => {
                 debug!("vmx: reading in parameters file from {}", params_path);
                 let params_file = File::open(params_path).unwrap();
-                Parameters::<Bls12>::read(params_file, true).unwrap()
+                Parameters::<Bls12>::read(params_file, false).unwrap()
             }
         };
         debug!("vmx: generate parameters: stop");
