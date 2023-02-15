@@ -181,10 +181,7 @@ mod tests {
     use rand::{rngs::StdRng, SeedableRng};
 
     use crate::{
-        groth16::{
-            create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof,
-            Parameters,
-        },
+        groth16::{self, Parameters},
         util_cs::{test_cs::TestConstraintSystem, Comparable},
     };
 
@@ -300,11 +297,12 @@ mod tests {
     fn test_testudo_circ() {
         fil_logger::maybe_init();
 
-        let exp = 4;
+        let exp = 10;
         let num_aux = 1 << exp;
         let num_cons = num_aux;
-        let num_inputs = 10;
+        let num_inputs = 328;
         let params_path = format!("/tmp/bellperson-testudo-{}-{}.params", num_inputs, exp);
+        let batch_size = 10;
 
         let circ = TestudoCircuit::new(num_aux, num_inputs, num_cons);
         let mut cs = TestConstraintSystem::<Fr>::new();
@@ -325,7 +323,8 @@ mod tests {
             Ok(false) => {
                 debug!("vmx: parameters file doesn't exist yet, generate parameters and write them to {}", params_path);
                 let params: Parameters<Bls12> =
-                    generate_random_parameters(circ.clone(), &mut rng).expect("param-gen failed");
+                    groth16::generate_random_parameters(circ.clone(), &mut rng)
+                        .expect("param-gen failed");
                 let params_file = File::create(params_path).unwrap();
                 params.write(params_file).unwrap();
                 params
@@ -338,13 +337,24 @@ mod tests {
         };
         debug!("vmx: generate parameters: stop");
         debug!("vmx: generate verifying key: start");
-        let pvk = prepare_verifying_key::<Bls12>(&params.vk);
+        let pvk = groth16::prepare_verifying_key::<Bls12>(&params.vk);
         debug!("vmx: generate verifying key: stop");
+
+        let circs = (0..batch_size).map(|_| circ.clone()).collect::<Vec<_>>();
+        let pub_inputs_batch = (0..batch_size)
+            .map(|_| pub_inputs.clone())
+            .collect::<Vec<_>>();
+
         debug!("vmx: start proof: start");
-        let proof = create_random_proof(circ, &params, &mut rng).expect("proving failed");
+        let proofs =
+            groth16::create_random_proof_batch(circs, &params, &mut rng).expect("proving failed");
+        let proofs_refs = proofs.iter().map(|proof| proof).collect::<Vec<_>>();
         debug!("vmx: start proof: stop");
         debug!("vmx: verify proof: start");
-        assert!(verify_proof(&pvk, &proof, &pub_inputs).expect("verification failed"));
+        assert!(
+            groth16::verify_proofs_batch(&pvk, &mut rng, &proofs_refs[..], &pub_inputs_batch)
+                .expect("verification failed")
+        );
         debug!("vmx: verify proof: stop");
     }
 }
