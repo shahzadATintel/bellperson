@@ -173,6 +173,8 @@ pub(crate) fn le_bytes_to_u64s(le_bytes: &[u8]) -> Vec<u64> {
 mod tests {
     use super::*;
 
+    use std::{fs::File, path::Path};
+
     use blstrs::{Bls12, Scalar as Fr};
     use ff::Field;
     use log::debug;
@@ -301,7 +303,8 @@ mod tests {
         let exp = 4;
         let num_aux = 1 << exp;
         let num_cons = num_aux;
-        let num_inputs = 3;
+        let num_inputs = 10;
+        let params_path = format!("/tmp/bellperson-testudo-{}-{}.params", num_inputs, exp);
 
         let circ = TestudoCircuit::new(num_aux, num_inputs, num_cons);
         let mut cs = TestConstraintSystem::<Fr>::new();
@@ -318,8 +321,21 @@ mod tests {
         let pub_inputs = circ.pub_inputs().to_vec();
         let mut rng = StdRng::seed_from_u64(1234);
         debug!("vmx: generate parameters: start");
-        let params: Parameters<Bls12> =
-            generate_random_parameters(circ.clone(), &mut rng).expect("param-gen failed");
+        let params = match Path::new(&params_path).try_exists() {
+            Ok(false) => {
+                debug!("vmx: parameters file doesn't exist yet, generate parameters and write them to {}", params_path);
+                let params: Parameters<Bls12> =
+                    generate_random_parameters(circ.clone(), &mut rng).expect("param-gen failed");
+                let params_file = File::create(params_path).unwrap();
+                params.write(params_file).unwrap();
+                params
+            }
+            _ => {
+                debug!("vmx: reading in parameters file from {}", params_path);
+                let params_file = File::open(params_path).unwrap();
+                Parameters::<Bls12>::read(params_file, true).unwrap()
+            }
+        };
         debug!("vmx: generate parameters: stop");
         debug!("vmx: generate verifying key: start");
         let pvk = prepare_verifying_key::<Bls12>(&params.vk);
