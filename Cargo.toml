@@ -38,7 +38,8 @@ blstrs = "0.6.0"
 pairing = "0.22"
 yastl = "0.1.2"
 ec-gpu = { version = "0.2.0" }
-ec-gpu-gen = { version = "0.3.0", default-features = false, features = ["fft", "multiexp"] }
+#ec-gpu-gen = { version = "0.3.0", default-features = false, features = ["fft", "multiexp"] }
+ec-gpu-gen = { git = "https://github.com/filecoin-project/ec-gpu", branch = "vmx-64gib-debug", default-features = false, features = ["fft", "multiexp"] }
 
 fs2 = { version = "0.4.3", optional = true }
 
@@ -91,5 +92,7 @@ members = [
 rustversion = "1.0.6"
 
 [patch.crates-io]
+blstrs = { git = "https://github.com/filecoin-project/blstrs", branch = "vmx-64gib-debug" }
+ec-gpu = { git = "https://github.com/filecoin-project/ec-gpu", branch = "vmx-64gib-debug" }
+#ec-gpu-gen = { git = "https://github.com/filecoin-project/ec-gpu", branch = "vmx-64gib-debug" }
 funty = { git = "https://github.com/bitvecto-rs/funty", rev = "7ef0d890fbcd8b3def1635ac1a877fc298488446" }
-ec-gpu-gen = { git = "https://github.com/filecoin-project/ec-gpu", branch = "vmx-64gib-debug" }
