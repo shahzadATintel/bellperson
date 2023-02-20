@@ -1,6 +1,8 @@
-use std::sync::Arc;
+use std::{mem, sync::Arc};
 
-use ec_gpu_gen::multiexp_cpu::{multiexp_cpu, QueryDensity, SourceBuilder};
+#[cfg(not(feature = "sppark"))]
+use ec_gpu_gen::multiexp_cpu::multiexp_cpu;
+use ec_gpu_gen::multiexp_cpu::{QueryDensity, SourceBuilder};
 use ec_gpu_gen::threadpool::{Waiter, Worker};
 use ec_gpu_gen::EcError;
 use ff::PrimeField;
@@ -46,7 +48,7 @@ where
     Waiter::done(result)
 }
 
-#[cfg(not(any(feature = "cuda", feature = "opencl")))]
+#[cfg(not(any(feature = "cuda", feature = "opencl", feature = "sppark")))]
 pub fn multiexp<'b, Q, D, G, S>(
     pool: &Worker,
     bases: S,
@@ -61,4 +63,39 @@ where
     S: SourceBuilder<G>,
 {
     multiexp_cpu(pool, bases, density_map, exponents)
+}
+
+#[cfg(feature = "sppark")]
+pub fn multiexp<'b, Q, D, G, S>(
+    _pool: &Worker,
+    bases: S,
+    density_map: D,
+    exponents: Arc<Vec<<G::Scalar as PrimeField>::Repr>>,
+    _kern: &mut gpu::LockedMultiexpKernel<G>,
+) -> Waiter<Result<<G as PrimeCurveAffine>::Curve, EcError>>
+where
+    for<'a> &'a Q: QueryDensity,
+    D: Send + Sync + 'static + Clone + AsRef<Q>,
+    G: PrimeCurveAffine,
+    S: SourceBuilder<G>,
+{
+    let exponents = density_map
+        .as_ref()
+        .generate_exps::<G::Scalar>(exponents.clone());
+    let (bases_arc, skip) = bases.clone().get();
+
+    // Bases are skipped by `self.1` elements, when converted from (Arc<Vec<G>>, usize) to Source
+    // https://github.com/zkcrypto/bellman/blob/10c5010fd9c2ca69442dc9775ea271e286e776d8/src/multiexp.rs#L38
+    let bases_slice = &bases_arc[skip..(skip + exponents.len())];
+    let exponents_slice = &exponents[..];
+
+    let bases_concrete = unsafe { mem::transmute::<&[_], &[blst::blst_p1_affine]>(&bases_slice) };
+    let exponents_concrete =
+        unsafe { mem::transmute::<&[_], &[blst::blst_scalar]>(&exponents_slice) };
+
+    let point = blst_msm::multi_scalar_mult(bases_concrete, exponents_concrete);
+
+    let result =
+        unsafe { *(mem::transmute::<_, *const blstrs::G1Projective>(&point) as *const G::Curve) };
+    Waiter::done(Ok(result))
 }

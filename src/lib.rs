@@ -141,6 +141,11 @@
 #[macro_use]
 extern crate hex_literal;
 
+#[cfg(all(any(feature = "cuda", feature = "opencl"), feature = "sppark",))]
+compile_error!(
+    "The `sppark` feature cannot be used in combination with the `cuda` or `opencl` feature"
+);
+
 pub mod domain;
 pub mod gadgets;
 pub mod gpu;
