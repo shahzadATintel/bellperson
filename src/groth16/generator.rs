@@ -28,6 +28,7 @@ where
     <E as Engine>::G2: WnafGroup,
     C: Circuit<E::Fr>,
     R: RngCore,
+    E::Fr: gpu::GpuName,
 {
     let g1 = E::G1::random(&mut *rng);
     let g2 = E::G2::random(&mut *rng);
@@ -197,6 +198,7 @@ where
     <E as Engine>::G1: WnafGroup,
     <E as Engine>::G2: WnafGroup,
     C: Circuit<E::Fr>,
+    E::Fr: gpu::GpuName,
 {
     let mut assembly = KeypairAssembly::new();
 

@@ -23,9 +23,10 @@ pub fn multiexp<'b, Q, D, G, E, S>(
 where
     for<'a> &'a Q: QueryDensity,
     D: Send + Sync + 'static + Clone + AsRef<Q>,
-    G: PrimeCurveAffine,
+    G: PrimeCurveAffine + gpu::GpuName,
     E: gpu::GpuEngine,
     E: Engine<Fr = G::Scalar>,
+    E::Fr: gpu::GpuName,
     S: SourceBuilder<G>,
 {
     // Try to run on the GPU.

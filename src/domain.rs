@@ -21,7 +21,10 @@ use crate::gpu;
 use ec_gpu_gen::fft_cpu;
 use ec_gpu_gen::threadpool::Worker;
 
-pub struct EvaluationDomain<E: Engine + gpu::GpuEngine> {
+pub struct EvaluationDomain<E: Engine + gpu::GpuEngine>
+//where
+//    E::Fr: gpu::GpuName,
+{
     coeffs: Vec<E::Fr>,
     exp: u32,
     omega: E::Fr,
@@ -30,19 +33,28 @@ pub struct EvaluationDomain<E: Engine + gpu::GpuEngine> {
     minv: E::Fr,
 }
 
-impl<E: Engine + gpu::GpuEngine> AsRef<[E::Fr]> for EvaluationDomain<E> {
+impl<E: Engine + gpu::GpuEngine> AsRef<[E::Fr]> for EvaluationDomain<E>
+//where
+//    E::Fr: gpu::GpuName,
+{
     fn as_ref(&self) -> &[E::Fr] {
         &self.coeffs
     }
 }
 
-impl<E: Engine + gpu::GpuEngine> AsMut<[E::Fr]> for EvaluationDomain<E> {
+impl<E: Engine + gpu::GpuEngine> AsMut<[E::Fr]> for EvaluationDomain<E>
+//where
+//    E::Fr: gpu::GpuName,
+{
     fn as_mut(&mut self) -> &mut [E::Fr] {
         &mut self.coeffs
     }
 }
 
-impl<E: Engine + gpu::GpuEngine> EvaluationDomain<E> {
+impl<E: Engine + gpu::GpuEngine> EvaluationDomain<E>
+//where
+//    E::Fr: gpu::GpuName,
+{
     pub fn into_coeffs(self) -> Vec<E::Fr> {
         self.coeffs
     }
@@ -84,7 +96,10 @@ impl<E: Engine + gpu::GpuEngine> EvaluationDomain<E> {
         &mut self,
         worker: &Worker,
         kern: &mut Option<gpu::LockedFFTKernel<E>>,
-    ) -> gpu::GpuResult<()> {
+    ) -> gpu::GpuResult<()>
+    where
+        E::Fr: gpu::GpuName,
+    {
         best_fft::<E>(
             kern,
             worker,
@@ -100,7 +115,10 @@ impl<E: Engine + gpu::GpuEngine> EvaluationDomain<E> {
         domains: &mut [&mut Self],
         worker: &Worker,
         kern: &mut Option<gpu::LockedFFTKernel<E>>,
-    ) -> gpu::GpuResult<()> {
+    ) -> gpu::GpuResult<()>
+    where
+        E::Fr: gpu::GpuName,
+    {
         let (mut coeffs, rest): (Vec<_>, Vec<_>) = domains
             .iter_mut()
             .map(|domain| (&mut domain.coeffs[..], (domain.omega, domain.exp)))
@@ -115,7 +133,10 @@ impl<E: Engine + gpu::GpuEngine> EvaluationDomain<E> {
         &mut self,
         worker: &Worker,
         kern: &mut Option<gpu::LockedFFTKernel<E>>,
-    ) -> gpu::GpuResult<()> {
+    ) -> gpu::GpuResult<()>
+    where
+        E::Fr: gpu::GpuName,
+    {
         Self::ifft_many(&mut [self], worker, kern)
     }
 
@@ -124,7 +145,10 @@ impl<E: Engine + gpu::GpuEngine> EvaluationDomain<E> {
         domains: &mut [&mut Self],
         worker: &Worker,
         kern: &mut Option<gpu::LockedFFTKernel<E>>,
-    ) -> gpu::GpuResult<()> {
+    ) -> gpu::GpuResult<()>
+    where
+        E::Fr: gpu::GpuName,
+    {
         let (mut coeffs, rest): (Vec<_>, Vec<_>) = domains
             .iter_mut()
             .map(|domain| (&mut domain.coeffs[..], (domain.omegainv, domain.exp)))
@@ -168,7 +192,10 @@ impl<E: Engine + gpu::GpuEngine> EvaluationDomain<E> {
         &mut self,
         worker: &Worker,
         kern: &mut Option<gpu::LockedFFTKernel<E>>,
-    ) -> gpu::GpuResult<()> {
+    ) -> gpu::GpuResult<()>
+    where
+        E::Fr: gpu::GpuName,
+    {
         Self::coset_fft_many(&mut [self], worker, kern)
     }
 
@@ -177,7 +204,10 @@ impl<E: Engine + gpu::GpuEngine> EvaluationDomain<E> {
         domains: &mut [&mut Self],
         worker: &Worker,
         kern: &mut Option<gpu::LockedFFTKernel<E>>,
-    ) -> gpu::GpuResult<()> {
+    ) -> gpu::GpuResult<()>
+    where
+        E::Fr: gpu::GpuName,
+    {
         for domain in domains.iter_mut() {
             domain.distribute_powers(worker, E::Fr::multiplicative_generator());
         }
@@ -191,7 +221,10 @@ impl<E: Engine + gpu::GpuEngine> EvaluationDomain<E> {
         &mut self,
         worker: &Worker,
         kern: &mut Option<gpu::LockedFFTKernel<E>>,
-    ) -> gpu::GpuResult<()> {
+    ) -> gpu::GpuResult<()>
+    where
+        E::Fr: gpu::GpuName,
+    {
         let geninv = self.geninv;
         self.ifft(worker, kern)?;
         self.distribute_powers(worker, geninv);
@@ -267,7 +300,9 @@ fn best_fft<E: Engine + gpu::GpuEngine>(
     coeffs: &mut [&mut [E::Fr]],
     omegas: &[E::Fr],
     log_ns: &[u32],
-) {
+) where
+    E::Fr: gpu::GpuName,
+{
     #[cfg(any(feature = "cuda", feature = "opencl"))]
     if let Some(ref mut kern) = kern {
         if kern
@@ -294,7 +329,10 @@ pub fn gpu_fft<E: Engine + gpu::GpuEngine>(
     coeffs: &mut [&mut [E::Fr]],
     omegas: &[E::Fr],
     log_ns: &[u32],
-) -> gpu::GpuResult<()> {
+) -> gpu::GpuResult<()>
+where
+    E::Fr: gpu::GpuName,
+{
     Ok(kern.radix_fft_many(coeffs, omegas, log_ns)?)
 }
 

@@ -10,7 +10,7 @@ use rayon::prelude::*;
 
 use super::{ParameterSource, Proof};
 use crate::domain::EvaluationDomain;
-use crate::gpu::{GpuEngine, LockedFFTKernel, LockedMultiexpKernel};
+use crate::gpu::{GpuEngine, GpuName, LockedFFTKernel, LockedMultiexpKernel};
 use crate::multiexp::multiexp;
 use crate::{
     Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable, BELLMAN_VERSION,
@@ -228,6 +228,9 @@ where
     E: GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
     R: RngCore,
+    E::Fr: GpuName,
+    E::G1Affine: GpuName,
+    E::G2Affine: GpuName,
 {
     let r_s = (0..circuits.len())
         .map(|_| E::Fr::random(&mut *rng))
@@ -249,6 +252,9 @@ pub fn create_proof_batch_priority_nonzk<E, C, P: ParameterSource<E>>(
 where
     E: GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
+    E::Fr: GpuName,
+    E::G1Affine: GpuName,
+    E::G2Affine: GpuName,
 {
     create_proof_batch_priority_inner(circuits, params, None, priority)
 }
@@ -266,6 +272,9 @@ pub fn create_proof_batch_priority<E, C, P: ParameterSource<E>>(
 where
     E: GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
+    E::Fr: GpuName,
+    E::G1Affine: GpuName,
+    E::G2Affine: GpuName,
 {
     create_proof_batch_priority_inner(circuits, params, Some((r_s, s_s)), priority)
 }
@@ -281,6 +290,9 @@ fn create_proof_batch_priority_inner<E, C, P: ParameterSource<E>>(
 where
     E: GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
+    E::Fr: GpuName,
+    E::G1Affine: GpuName,
+    E::G2Affine: GpuName,
 {
     info!("Bellperson {} is being used!", BELLMAN_VERSION);
 
@@ -601,6 +613,9 @@ fn execute_fft<E>(
 ) -> Result<Arc<Vec<<E::Fr as PrimeField>::Repr>>, SynthesisError>
 where
     E: GpuEngine + MultiMillerLoop,
+    E::Fr: GpuName,
+    E::G1Affine: GpuName,
+    E::G2Affine: GpuName,
 {
     let mut a = EvaluationDomain::from_coeffs(std::mem::take(&mut prover.a))?;
     let mut b = EvaluationDomain::from_coeffs(std::mem::take(&mut prover.b))?;

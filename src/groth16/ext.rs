@@ -13,6 +13,9 @@ pub fn create_proof<E, C, P: ParameterSource<E>>(
 where
     E: gpu::GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
+    E::Fr: gpu::GpuName,
+    E::G1Affine: gpu::GpuName,
+    E::G2Affine: gpu::GpuName,
 {
     let proofs =
         create_proof_batch_priority::<E, C, P>(vec![circuit], params, vec![r], vec![s], false)?;
@@ -28,6 +31,9 @@ where
     E: gpu::GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
     R: RngCore,
+    E::Fr: gpu::GpuName,
+    E::G1Affine: gpu::GpuName,
+    E::G2Affine: gpu::GpuName,
 {
     let proofs =
         create_random_proof_batch_priority::<E, C, R, P>(vec![circuit], params, rng, false)?;
@@ -43,6 +49,9 @@ pub fn create_proof_batch<E, C, P: ParameterSource<E>>(
 where
     E: gpu::GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
+    E::Fr: gpu::GpuName,
+    E::G1Affine: gpu::GpuName,
+    E::G2Affine: gpu::GpuName,
 {
     create_proof_batch_priority::<E, C, P>(circuits, params, r, s, false)
 }
@@ -56,6 +65,9 @@ where
     E: gpu::GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
     R: RngCore,
+    E::Fr: gpu::GpuName,
+    E::G1Affine: gpu::GpuName,
+    E::G2Affine: gpu::GpuName,
 {
     create_random_proof_batch_priority::<E, C, R, P>(circuits, params, rng, false)
 }
@@ -69,6 +81,9 @@ pub fn create_proof_in_priority<E, C, P: ParameterSource<E>>(
 where
     E: gpu::GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
+    E::Fr: gpu::GpuName,
+    E::G1Affine: gpu::GpuName,
+    E::G2Affine: gpu::GpuName,
 {
     let proofs =
         create_proof_batch_priority::<E, C, P>(vec![circuit], params, vec![r], vec![s], true)?;
@@ -84,6 +99,9 @@ where
     E: gpu::GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
     R: RngCore,
+    E::Fr: gpu::GpuName,
+    E::G1Affine: gpu::GpuName,
+    E::G2Affine: gpu::GpuName,
 {
     let proofs =
         create_random_proof_batch_priority::<E, C, R, P>(vec![circuit], params, rng, true)?;
@@ -99,6 +117,9 @@ pub fn create_proof_batch_in_priority<E, C, P: ParameterSource<E>>(
 where
     E: gpu::GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
+    E::Fr: gpu::GpuName,
+    E::G1Affine: gpu::GpuName,
+    E::G2Affine: gpu::GpuName,
 {
     create_proof_batch_priority::<E, C, P>(circuits, params, r, s, true)
 }
@@ -112,6 +133,9 @@ where
     E: gpu::GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
     R: RngCore,
+    E::Fr: gpu::GpuName,
+    E::G1Affine: gpu::GpuName,
+    E::G2Affine: gpu::GpuName,
 {
     create_random_proof_batch_priority::<E, C, R, P>(circuits, params, rng, true)
 }

@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::path::PathBuf;
 
-use ec_gpu::GpuEngine;
+use ec_gpu::{GpuEngine, GpuName};
 use ec_gpu_gen::fft::FftKernel;
 use ec_gpu_gen::rust_gpu_tools::Device;
 use fs2::FileExt;
@@ -102,16 +102,23 @@ impl Drop for PriorityLock {
 fn create_fft_kernel<'a, E>(priority: bool) -> Option<FftKernel<'a, E>>
 where
     E: Engine + GpuEngine,
+    E::Fr: GpuName,
 {
     let devices = Device::all();
+    let programs = devices
+        .iter()
+        .map(|device| ec_gpu_gen::program!(device))
+        .collect::<Result<_, _>>()
+        .ok()?;
+
     let kernel = if priority {
-        FftKernel::create_with_abort(&devices, &|| -> bool {
+        FftKernel::create_with_abort(programs, &|| -> bool {
             // We only supply a function in case it is high priority, hence always passing in
             // `true`.
             PriorityLock::should_break(true)
         })
     } else {
-        FftKernel::create(&devices)
+        FftKernel::create(programs)
     };
     match kernel {
         Ok(k) => {
@@ -128,6 +135,7 @@ where
 fn create_multiexp_kernel<'a, E>(priority: bool) -> Option<CpuGpuMultiexpKernel<'a, E>>
 where
     E: Engine + GpuEngine,
+    E::Fr: GpuName,
 {
     let devices = Device::all();
     let kernel = if priority {
@@ -167,6 +175,7 @@ macro_rules! locked_kernel {
         impl<'a, E> $class<'a, E>
         where
             E: pairing::Engine + ec_gpu::GpuEngine,
+            E::Fr: ec_gpu::GpuName,
         {
             pub fn new(priority: bool) -> $class<'a, E> {
                 $class::<E> {

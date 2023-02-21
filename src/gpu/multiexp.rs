@@ -12,7 +12,7 @@ use group::{prime::PrimeCurveAffine, Group};
 use log::{error, info};
 use pairing::Engine;
 
-use crate::gpu::GpuEngine;
+use crate::gpu::{GpuEngine, GpuName};
 
 pub fn get_cpu_utilization() -> f64 {
     env::var("BELLMAN_CPU_UTILIZATION")
@@ -61,12 +61,17 @@ where
 impl<'a, E> CpuGpuMultiexpKernel<'a, E>
 where
     E: Engine + GpuEngine,
+    E::Fr: GpuName,
 {
     /// Create new kernels, one for each given device.
     pub fn create(devices: &[&Device]) -> EcResult<Self> {
         info!("Multiexp: CPU utilization: {}.", get_cpu_utilization());
         set_custom_gpu_env_var();
-        let kernel = MultiexpKernel::create(devices)?;
+        let programs = devices
+            .iter()
+            .map(|device| ec_gpu_gen::program!(device))
+            .collect::<Result<_, _>>()?;
+        let kernel = MultiexpKernel::create(programs, devices)?;
         Ok(Self(kernel))
     }
 
@@ -80,7 +85,11 @@ where
     ) -> EcResult<Self> {
         info!("Multiexp: CPU utilization: {}.", get_cpu_utilization());
         set_custom_gpu_env_var();
-        let kernel = MultiexpKernel::create_with_abort(devices, maybe_abort)?;
+        let programs = devices
+            .iter()
+            .map(|device| ec_gpu_gen::program!(device))
+            .collect::<Result<_, _>>()?;
+        let kernel = MultiexpKernel::create_with_abort(programs, devices, maybe_abort)?;
         Ok(Self(kernel))
     }
 
@@ -93,7 +102,7 @@ where
         skip: usize,
     ) -> EcResult<<G as PrimeCurveAffine>::Curve>
     where
-        G: PrimeCurveAffine<Scalar = E::Fr>,
+        G: PrimeCurveAffine<Scalar = E::Fr> + GpuName,
     {
         // Bases are skipped by `self.1` elements, when converted from (Arc<Vec<G>>, usize) to Source
         // https://github.com/zkcrypto/bellman/blob/10c5010fd9c2ca69442dc9775ea271e286e776d8/src/multiexp.rs#L38
