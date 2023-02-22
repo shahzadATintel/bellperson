@@ -1,8 +1,6 @@
 use std::{mem, sync::Arc};
 
-#[cfg(not(feature = "sppark"))]
-use ec_gpu_gen::multiexp_cpu::multiexp_cpu;
-use ec_gpu_gen::multiexp_cpu::{QueryDensity, SourceBuilder};
+use ec_gpu_gen::multiexp_cpu::{multiexp_cpu, QueryDensity, SourceBuilder};
 use ec_gpu_gen::threadpool::{Waiter, Worker};
 use ec_gpu_gen::EcError;
 use ff::PrimeField;
@@ -67,7 +65,7 @@ where
 
 #[cfg(feature = "sppark")]
 pub fn multiexp<'b, Q, D, G, S>(
-    _pool: &Worker,
+    pool: &Worker,
     bases: S,
     density_map: D,
     exponents: Arc<Vec<<G::Scalar as PrimeField>::Repr>>,
@@ -79,30 +77,29 @@ where
     G: PrimeCurveAffine,
     S: SourceBuilder<G>,
 {
-    let exponents = density_map
-        .as_ref()
-        .generate_exps::<G::Scalar>(exponents.clone());
-    let (bases_arc, skip) = bases.clone().get();
+    if std::any::TypeId::of::<G>() == std::any::TypeId::of::<blstrs::G1Affine>() {
+        let exponents = density_map
+            .as_ref()
+            .generate_exps::<G::Scalar>(exponents.clone());
+        let (bases_arc, skip) = bases.clone().get();
 
-    // Bases are skipped by `self.1` elements, when converted from (Arc<Vec<G>>, usize) to Source
-    // https://github.com/zkcrypto/bellman/blob/10c5010fd9c2ca69442dc9775ea271e286e776d8/src/multiexp.rs#L38
-    let bases_slice = &bases_arc[skip..(skip + exponents.len())];
-    let exponents_slice = &exponents[..];
+        // Bases are skipped by `self.1` elements, when converted from (Arc<Vec<G>>, usize) to Source
+        // https://github.com/zkcrypto/bellman/blob/10c5010fd9c2ca69442dc9775ea271e286e776d8/src/multiexp.rs#L38
+        let bases_slice = &bases_arc[skip..(skip + exponents.len())];
+        let exponents_slice = &exponents[..];
 
-    let exponents_blst = unsafe { mem::transmute::<&[_], &[blst::blst_scalar]>(&exponents_slice) };
-    //let bases_concrete = unsafe { mem::transmute::<&[_], &[blst::blst_p1_affine]>(&bases_slice) };
-    let point = if std::any::TypeId::of::<G>() == std::any::TypeId::of::<blstrs::G1Affine>() {
+        let exponents_blst =
+            unsafe { mem::transmute::<&[_], &[blst::blst_scalar]>(&exponents_slice) };
         let bases_blst = unsafe { mem::transmute::<&[_], &[blst::blst_p1_affine]>(&bases_slice) };
-        blst_msm::multi_scalar_mult(bases_blst, exponents_blst)
+        let point = blst_msm::multi_scalar_mult(bases_blst, exponents_blst);
+        let result = unsafe {
+            *(mem::transmute::<_, *const blstrs::G1Projective>(&point) as *const G::Curve)
+        };
+        Waiter::done(Ok(result))
     } else if std::any::TypeId::of::<G>() == std::any::TypeId::of::<blstrs::G2Affine>() {
-        //let bases_blst = unsafe { mem::transmute::<&[_], &[blst::blst_p2_affine]>(&bases_slice) };
-        //blst_msm::multi_scalar_mult(bases_blst, exponents_blst)
-        panic!("trying to do MSM on G2")
+        // sppark doesn't support G2 yet, hence falling back to CPU.
+        multiexp_cpu(pool, bases, density_map, exponents)
     } else {
         unreachable!();
-    };
-
-    let result =
-        unsafe { *(mem::transmute::<_, *const blstrs::G1Projective>(&point) as *const G::Curve) };
-    Waiter::done(Ok(result))
+    }
 }
