@@ -89,11 +89,18 @@ where
     let bases_slice = &bases_arc[skip..(skip + exponents.len())];
     let exponents_slice = &exponents[..];
 
-    let bases_concrete = unsafe { mem::transmute::<&[_], &[blst::blst_p1_affine]>(&bases_slice) };
-    let exponents_concrete =
-        unsafe { mem::transmute::<&[_], &[blst::blst_scalar]>(&exponents_slice) };
-
-    let point = blst_msm::multi_scalar_mult(bases_concrete, exponents_concrete);
+    let exponents_blst = unsafe { mem::transmute::<&[_], &[blst::blst_scalar]>(&exponents_slice) };
+    //let bases_concrete = unsafe { mem::transmute::<&[_], &[blst::blst_p1_affine]>(&bases_slice) };
+    let point = if std::any::TypeId::of::<G>() == std::any::TypeId::of::<blstrs::G1Affine>() {
+        let bases_blst = unsafe { mem::transmute::<&[_], &[blst::blst_p1_affine]>(&bases_slice) };
+        blst_msm::multi_scalar_mult(bases_blst, exponents_blst)
+    } else if std::any::TypeId::of::<G>() == std::any::TypeId::of::<blstrs::G2Affine>() {
+        //let bases_blst = unsafe { mem::transmute::<&[_], &[blst::blst_p2_affine]>(&bases_slice) };
+        //blst_msm::multi_scalar_mult(bases_blst, exponents_blst)
+        panic!("trying to do MSM on G2")
+    } else {
+        unreachable!();
+    };
 
     let result =
         unsafe { *(mem::transmute::<_, *const blstrs::G1Projective>(&point) as *const G::Curve) };
