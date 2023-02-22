@@ -77,6 +77,8 @@ where
     G: PrimeCurveAffine,
     S: SourceBuilder<G>,
 {
+    use group::Curve;
+
     if std::any::TypeId::of::<G>() == std::any::TypeId::of::<blstrs::G1Affine>() {
         let exponents = density_map
             .as_ref()
@@ -88,19 +90,29 @@ where
         let bases_slice = &bases_arc[skip..(skip + exponents.len())];
         let exponents_slice = &exponents[..];
 
+        let bases_blst = unsafe { mem::transmute::<&[_], &[blst::blst_p1_affine]>(&bases_slice) };
         let exponents_blst =
             unsafe { mem::transmute::<&[_], &[blst::blst_scalar]>(&exponents_slice) };
-        let bases_blst = unsafe { mem::transmute::<&[_], &[blst::blst_p1_affine]>(&bases_slice) };
         let point = blst_msm::multi_scalar_mult(bases_blst, exponents_blst);
         let result = unsafe {
             *(mem::transmute::<_, *const blstrs::G1Projective>(&point) as *const G::Curve)
         };
 
         // Compare result to CPU run
-        let cpu_result = multiexp_cpu(pool, bases, density_map, exponents).wait().unwrap();
-        assert_eq!(result, cpu_result);
+        let cpu_result = multiexp_cpu(pool, bases, density_map, exponents)
+            .wait()
+            .unwrap();
+        assert_eq!(result.to_affine(), cpu_result.to_affine());
 
         Waiter::done(Ok(result))
+
+        //let result_blst = unsafe { mem::transmute::<_, blstrs::G1Projective>(point) };
+        //
+        //// Compare result to CPU run
+        //let cpu_result = multiexp_cpu(pool, bases, density_map, exponents).wait().unwrap();
+        //assert_eq!(result_blst.to_affine(), cpu_result.to_affine());
+        //
+        //let result = unsafe { *(&result_blst as *const _ as *const G::Curve) };
     } else if std::any::TypeId::of::<G>() == std::any::TypeId::of::<blstrs::G2Affine>() {
         // sppark doesn't support G2 yet, hence falling back to CPU.
         multiexp_cpu(pool, bases, density_map, exponents)
