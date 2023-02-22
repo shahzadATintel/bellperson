@@ -95,6 +95,11 @@ where
         let result = unsafe {
             *(mem::transmute::<_, *const blstrs::G1Projective>(&point) as *const G::Curve)
         };
+
+        // Compare result to CPU run
+        let cpu_result = multiexp_cpu(pool, bases, density_map, exponents).wait().unwrap();
+        assert_eq!(result, cpu_result);
+
         Waiter::done(Ok(result))
     } else if std::any::TypeId::of::<G>() == std::any::TypeId::of::<blstrs::G2Affine>() {
         // sppark doesn't support G2 yet, hence falling back to CPU.
