@@ -47,7 +47,9 @@ impl GPULock<'_> {
             debug!("Acquiring GPU {:?} lock at {:?} ...", uid, &gpu_lock_file);
             let f = File::create(&gpu_lock_file)
                 .unwrap_or_else(|_| panic!("Cannot create GPU {:?} lock file at {:?}", uid, &gpu_lock_file));
-            f.lock_exclusive().unwrap();
+            if f.try_lock_exclusive().is_err() {
+                continue
+            }
             debug!("GPU {:?} lock acquired!", uid);
             locks.push((f, device, gpu_lock_file));
             if locks.len() >= gpu_per_task {
