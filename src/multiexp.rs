@@ -33,6 +33,11 @@ where
         let (bss, skip) = bases.clone().get();
         k.multiexp(pool, bss, exps, skip).map_err(Into::into)
     }) {
+        log::trace!("vmx: bellperson: multiexp: multiexp on GPU was succcessful");
+        let result_cpu = multiexp_cpu(pool, bases, density_map, exponents);
+        log::trace!("vmx: bellperson: multiexp: now compare to CPU");
+        assert_eq!(p, result_cpu.wait().unwrap());
+
         return Waiter::done(Ok(p));
     }
 
