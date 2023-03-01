@@ -65,7 +65,8 @@ impl GPULock<'_> {
         GPULock(locks)
     }
 }
-impl Drop for GPULock {
+
+impl Drop for GPULock<'_> {
     fn drop(&mut self) {
         for f in &self.0 {
             f.0.unlock().unwrap();
@@ -133,7 +134,7 @@ impl Drop for PriorityLock {
     }
 }
 
-fn create_fft_kernel<'a, F>(priority: bool) -> Option<FftKernel<'a, F>>
+fn create_fft_kernel<'a, F>(priority: bool) -> Option<(FftKernel<'a, F>, GPULock<'a>)>
 where
     F: Field + GpuName,
 {
@@ -168,7 +169,7 @@ where
     }
 }
 
-fn create_multiexp_kernel<'a, G>(priority: bool) -> Option<CpuGpuMultiexpKernel<'a, G>>
+fn create_multiexp_kernel<'a, G>(priority: bool) -> Option<(CpuGpuMultiexpKernel<'a, G>, GPULock<'a>)>
 where
     G: PrimeCurveAffine + GpuName,
 {
@@ -212,7 +213,7 @@ macro_rules! locked_kernel {
             priority: bool,
             // Keep the GPU lock alongside the kernel, so that the lock is automatically dropped
             // if the kernel is dropped.
-            kernel_and_lock: Option<($kern<'a, E>, GPULock<'a>)>,
+            kernel_and_lock: Option<($kernel, GPULock<'a>)>,
         }
 
         impl<'a, $generic> $class<$lifetime, $generic>
@@ -234,7 +235,7 @@ macro_rules! locked_kernel {
                 if self.kernel_and_lock.is_none() {
                     PriorityLock::wait(self.priority);
                     info!("GPU is available for {}!", $name);
-                    if let Some((kernel, lock)) = $func::<E>(self.priority) {
+                    if let Some((kernel, lock)) = $func(self.priority) {
                         self.kernel_and_lock = Some((kernel, lock));
                     }
                 }
