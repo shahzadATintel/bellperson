@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::path::PathBuf;
-use std::convert::TryFrom;
 
 use ec_gpu_gen::fft::FftKernel;
 use ec_gpu_gen::rust_gpu_tools::{Device, UniqueId};
