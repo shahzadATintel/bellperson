@@ -299,3 +299,4 @@ locked_kernel!(
     where
         G: PrimeCurveAffine + GpuName,
 );
+
