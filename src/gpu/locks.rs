@@ -17,9 +17,9 @@ const PRIORITY_LOCK_NAME: &str = "bellman.priority.lock";
 
 fn tmp_path(filename: &str, id: Option<UniqueId>) -> PathBuf {
     let mut p = std::env::temp_dir();
-    let tmpfile = filename.to_owned();
+    let mut tmpfile = filename.to_owned();
     if id.is_some() {
-        tmpfile.push_str("." + &id.to_string());
+        tmpfile.push_str(&(".".to_owned() + &id.unwrap().to_string()));
     }
     p.push(tmpfile);
     p
@@ -34,26 +34,19 @@ impl GPULock<'_> {
     pub fn lock() -> GPULock<'static> {
         let devices = Device::all();
         let mut locks = Vec::new();
+        let mut gpus_per_lock = devices.len();
 
-        let mut gpus_per_lock = match std::env::var("BELLPERSON_GPUS_PER_LOCK") {
+        match std::env::var("BELLPERSON_GPUS_PER_LOCK") {
             Ok(val) => {
                 match val.parse::<usize>() {
-                Ok(val) => val,
-                Err(_)
-                    warn!("BELLPERSON_GPUS_PER_LOCK is not number, use all gpus");
-                    devices.len()
-                }
+                    Ok(val) if val > 0 => gpus_per_lock = val,
+                    _ => warn!("BELLPERSON_GPUS_PER_LOCK is not number, use all gpus"),
+                };
             },
-            Err(_) => {
-                warn!("BELLPERSON_GPUS_PER_LOCK parse fail, use all gpus");
-                devices.len()
-            },
+            _ => warn!("BELLPERSON_GPUS_PER_LOCK parse fail, use all gpus"),
         };
-        if gpus_per_lock == 0 {
-            gpus_per_lock = devices.len();
-        }
 
-        for (index, device) in devices.enmuerate() {
+        for (index, device) in devices.iter().enumerate() {
             let uid = device.unique_id();
             let gpu_lock_file = tmp_path(GPU_LOCK_NAME, Some(uid));
             debug!("Acquiring GPU lock {}/{} at {:?} ...", index, gpus_per_lock, &gpu_lock_file);
@@ -62,8 +55,8 @@ impl GPULock<'_> {
             if f.try_lock_exclusive().is_err() {
                 continue
             }
-            debug!("GPU lock acquired at {}", gpu_lock_file);
-            locks.push((f, device, gpu_lock_file));
+            debug!("GPU lock acquired at {:?}", gpu_lock_file);
+            locks.push((f, *device, gpu_lock_file));
             if locks.len() >= gpus_per_lock {
                 break;
             }
@@ -76,7 +69,7 @@ impl Drop for GPULock {
     fn drop(&mut self) {
         for f in &self.0 {
             f.0.unlock().unwrap();
-            debug!("GPU lock released at {}", f.2);
+            debug!("GPU lock released at {:?}", f.2);
         }
     }
 }
