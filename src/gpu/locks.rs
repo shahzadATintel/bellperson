@@ -49,11 +49,18 @@ impl GPULock<'_> {
         for (index, device) in devices.iter().enumerate() {
             let uid = device.unique_id();
             let gpu_lock_file = tmp_path(GPU_LOCK_NAME, Some(uid));
-            debug!("Acquiring GPU lock {}/{} at {:?} ...", index, gpus_per_lock, &gpu_lock_file);
-            let f = File::create(&gpu_lock_file)
-                .unwrap_or_else(|_| panic!("Cannot create GPU {:?} lock file at {:?}", uid, &gpu_lock_file));
+            debug!(
+                "Acquiring GPU lock {}/{} at {:?} ...",
+                index, gpus_per_lock, &gpu_lock_file,
+            );
+            let f = File::create(&gpu_lock_file).unwrap_or_else(|_| {
+                panic!(
+                    "Cannot create GPU {:?} lock file at {:?}",
+                    uid, &gpu_lock_file,
+                )
+            });
             if f.try_lock_exclusive().is_err() {
-                continue
+                continue;
             }
             debug!("GPU lock acquired at {:?}", gpu_lock_file);
             locks.push((f, *device, gpu_lock_file));
@@ -139,11 +146,11 @@ where
     F: Field + GpuName,
 {
     let lock = GPULock::lock();
-    let devices = lock.
-        0.
-        iter().
-        map(|(_, device, _)| *device).
-        collect::<Vec<&Device>>();
+    let devices = lock
+        .0
+        .iter()
+        .map(|(_, device, _)| *device)
+        .collect::<Vec<&Device>>();
 
     let programs = devices
         .iter()
@@ -176,11 +183,11 @@ where
     G: PrimeCurveAffine + GpuName,
 {
     let lock = GPULock::lock();
-    let devices = lock.
-        0.
-        iter().
-        map(|(_, device, _)| *device).
-        collect::<Vec<&Device>>();
+    let devices = lock
+        .0
+        .iter()
+        .map(|(_, device, _)| *device)
+        .collect::<Vec<&Device>>();
 
     let kernel = if priority {
         CpuGpuMultiexpKernel::create(&devices)
@@ -307,4 +314,3 @@ locked_kernel!(
     where
         G: PrimeCurveAffine + GpuName,
 );
-
