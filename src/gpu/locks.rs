@@ -139,11 +139,7 @@ where
     F: Field + GpuName,
 {
     let lock = GPULock::lock();
-    let mut devices = Vec::new();
-
-    for l in &lock.0 {
-        devices.push(l.1);
-    }
+    let devices = lock.0.iter().map(|(_, device, _)| *device).collect::<Vec<&Device>>();
 
     let programs = devices
         .iter()
@@ -174,11 +170,7 @@ where
     G: PrimeCurveAffine + GpuName,
 {
     let lock = GPULock::lock();
-    let mut devices = Vec::new();
-
-    for l in &lock.0 {
-        devices.push(l.1);
-    }
+    let devices = lock.0.iter().map(|(_, device, _)| *device).collect::<Vec<&Device>>();
 
     let kernel = if priority {
         CpuGpuMultiexpKernel::create(&devices)
