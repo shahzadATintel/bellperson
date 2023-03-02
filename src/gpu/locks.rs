@@ -42,7 +42,7 @@ impl GPULock<'_> {
                     Ok(val) if val > 0 => gpus_per_lock = val,
                     _ => warn!("BELLPERSON_GPUS_PER_LOCK is not number, use all gpus"),
                 };
-            },
+            }
             _ => warn!("BELLPERSON_GPUS_PER_LOCK parse fail, use all gpus"),
         };
 
@@ -139,7 +139,11 @@ where
     F: Field + GpuName,
 {
     let lock = GPULock::lock();
-    let devices = lock.0.iter().map(|(_, device, _)| *device).collect::<Vec<&Device>>();
+    let devices = lock.
+        0.
+        iter().
+        map(|(_, device, _)| *device).
+        collect::<Vec<&Device>>();
 
     let programs = devices
         .iter()
@@ -165,12 +169,18 @@ where
     }
 }
 
-fn create_multiexp_kernel<'a, G>(priority: bool) -> Option<(CpuGpuMultiexpKernel<'a, G>, GPULock<'a>)>
+fn create_multiexp_kernel<'a, G>(
+    priority: bool,
+) -> Option<(CpuGpuMultiexpKernel<'a, G>, GPULock<'a>)>
 where
     G: PrimeCurveAffine + GpuName,
 {
     let lock = GPULock::lock();
-    let devices = lock.0.iter().map(|(_, device, _)| *device).collect::<Vec<&Device>>();
+    let devices = lock.
+        0.
+        iter().
+        map(|(_, device, _)| *device).
+        collect::<Vec<&Device>>();
 
     let kernel = if priority {
         CpuGpuMultiexpKernel::create(&devices)
