@@ -18,8 +18,8 @@ const PRIORITY_LOCK_NAME: &str = "bellman.priority.lock";
 fn tmp_path(filename: &str, id: Option<UniqueId>) -> PathBuf {
     let mut p = std::env::temp_dir();
     let mut tmpfile = filename.to_owned();
-    if id.is_some() {
-        tmpfile.push_str(&(".".to_owned() + &id.unwrap().to_string()));
+    if let Some(id_str) = id {
+        tmpfile.push_str(&(".".to_owned() + &id_str.to_string()));
     }
     p.push(tmpfile);
     p
