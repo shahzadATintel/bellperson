@@ -84,7 +84,7 @@ where
     if exponents_orig.len() > 512
         && std::any::TypeId::of::<G>() == std::any::TypeId::of::<blstrs::G1Affine>()
     {
-        log::debug!("vmx: running multiexp on sppark");
+        log::debug!("vmx: running multiexp on sppark: {}", exponents_orig.len());
         let exponents = density_map
             .as_ref()
             .generate_exps::<G::Scalar>(exponents_orig.clone());
