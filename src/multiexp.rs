@@ -107,6 +107,12 @@ where
         let cpu_result = multiexp_cpu(pool, bases, density_map, exponents_orig)
             .wait()
             .unwrap();
+        if result.to_affine() != cpu_result.to_affine() {
+            let bases_u8 = unsafe { mem::transmute::<&[_], &[u8]>(&bases_blst) };
+            std::fs::write("/tmp/msm.bases", bases_u8).unwrap();
+            let exponents_u8 = unsafe { mem::transmute::<&[_], &[u8]>(&exponents_blst) };
+            std::fs::write("/tmp/msm.exponents", exponents_u8).unwrap();
+        }
         assert_eq!(result.to_affine(), cpu_result.to_affine());
 
         Waiter::done(Ok(result))
