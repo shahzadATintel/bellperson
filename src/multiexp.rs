@@ -68,7 +68,7 @@ pub fn multiexp<'b, Q, D, G, S>(
     pool: &Worker,
     bases: S,
     density_map: D,
-    exponents: Arc<Vec<<G::Scalar as PrimeField>::Repr>>,
+    exponents_orig: Arc<Vec<<G::Scalar as PrimeField>::Repr>>,
     _kern: &mut gpu::LockedMultiexpKernel<G>,
 ) -> Waiter<Result<<G as PrimeCurveAffine>::Curve, EcError>>
 where
@@ -77,13 +77,17 @@ where
     G: PrimeCurveAffine,
     S: SourceBuilder<G>,
 {
+    use group::Curve;
+
     // `sppark` MSM doesn't work with <= 512 elements and also only on G1. For the rest, use the
     // CPU implementation.
-    if exponents.len() > 512 && std::any::TypeId::of::<G>() == std::any::TypeId::of::<blstrs::G1Affine>() {
+    if exponents_orig.len() > 512
+        && std::any::TypeId::of::<G>() == std::any::TypeId::of::<blstrs::G1Affine>()
+    {
         log::debug!("vmx: running multiexp on sppark");
         let exponents = density_map
             .as_ref()
-            .generate_exps::<G::Scalar>(exponents.clone());
+            .generate_exps::<G::Scalar>(exponents_orig.clone());
         let (bases_arc, skip) = bases.clone().get();
 
         // Bases are skipped by `self.1` elements, when converted from (Arc<Vec<G>>, usize) to Source
@@ -99,9 +103,14 @@ where
             *(mem::transmute::<_, *const blstrs::G1Projective>(&point) as *const G::Curve)
         };
 
-        Waiter::done(Ok(result))
+        // Compare result to CPU run
+        let cpu_result = multiexp_cpu(pool, bases, density_map, exponents_orig)
+            .wait()
+            .unwrap();
+        assert_eq!(result.to_affine(), cpu_result.to_affine());
 
+        Waiter::done(Ok(result))
     } else {
-        multiexp_cpu(pool, bases, density_map, exponents)
+        multiexp_cpu(pool, bases, density_map, exponents_orig)
     }
 }
