@@ -63,6 +63,10 @@ where
     multiexp_cpu(pool, bases, density_map, exponents)
 }
 
+unsafe fn as_u8_slice<T: Sized>(value: &T) -> &[u8] {
+    std::slice::from_raw_parts(value as *const T as *const u8, mem::size_of::<T>())
+}
+
 #[cfg(feature = "sppark")]
 pub fn multiexp<'b, Q, D, G, S>(
     pool: &Worker,
@@ -108,9 +112,9 @@ where
             .wait()
             .unwrap();
         if result.to_affine() != cpu_result.to_affine() {
-            let bases_u8 = unsafe { mem::transmute::<&[_], &[u8]>(&bases_blst) };
+            let bases_u8 = unsafe { as_u8_slice(&bases_blst) };
             std::fs::write("/tmp/msm.bases", bases_u8).unwrap();
-            let exponents_u8 = unsafe { mem::transmute::<&[_], &[u8]>(&exponents_blst) };
+            let exponents_u8 = unsafe { as_u8_slice(&exponents_blst) };
             std::fs::write("/tmp/msm.exponents", exponents_u8).unwrap();
         }
         assert_eq!(result.to_affine(), cpu_result.to_affine());
