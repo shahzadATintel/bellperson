@@ -83,21 +83,21 @@ where
 {
     use group::Curve;
 
+    let exponents = density_map
+        .as_ref()
+        .generate_exps::<G::Scalar>(exponents_orig.clone());
+    let (bases_arc, skip) = bases.clone().get();
+    // Bases are skipped by `self.1` elements, when converted from (Arc<Vec<G>>, usize) to Source
+    // https://github.com/zkcrypto/bellman/blob/10c5010fd9c2ca69442dc9775ea271e286e776d8/src/multiexp.rs#L38
+    let bases_slice = &bases_arc[skip..(skip + exponents.len())];
+    let exponents_slice = &exponents[..];
+
     // `sppark` MSM doesn't work with <= 512 elements and also only on G1. For the rest, use the
     // CPU implementation.
-    if exponents_orig.len() > 512
+    if exponents_slice.len() > 512
         && std::any::TypeId::of::<G>() == std::any::TypeId::of::<blstrs::G1Affine>()
     {
         log::debug!("vmx: running multiexp on sppark: {}", exponents_orig.len());
-        let exponents = density_map
-            .as_ref()
-            .generate_exps::<G::Scalar>(exponents_orig.clone());
-        let (bases_arc, skip) = bases.clone().get();
-
-        // Bases are skipped by `self.1` elements, when converted from (Arc<Vec<G>>, usize) to Source
-        // https://github.com/zkcrypto/bellman/blob/10c5010fd9c2ca69442dc9775ea271e286e776d8/src/multiexp.rs#L38
-        let bases_slice = &bases_arc[skip..(skip + exponents.len())];
-        let exponents_slice = &exponents[..];
 
         let bases_blst = unsafe { mem::transmute::<&[_], &[blst::blst_p1_affine]>(&bases_slice) };
         let exponents_blst =
@@ -106,21 +106,9 @@ where
         let result = unsafe {
             *(mem::transmute::<_, *const blstrs::G1Projective>(&point) as *const G::Curve)
         };
-
-        // Compare result to CPU run
-        let cpu_result = multiexp_cpu(pool, bases, density_map, exponents_orig)
-            .wait()
-            .unwrap();
-        if result.to_affine() != cpu_result.to_affine() {
-            let bases_u8 = unsafe { as_u8_slice(&bases_blst) };
-            std::fs::write("/tmp/msm.bases", bases_u8).unwrap();
-            let exponents_u8 = unsafe { as_u8_slice(&exponents_blst) };
-            std::fs::write("/tmp/msm.exponents", exponents_u8).unwrap();
-        }
-        assert_eq!(result.to_affine(), cpu_result.to_affine());
-
         Waiter::done(Ok(result))
     } else {
+        log::debug!("Falling back to to CPU multiexp");
         multiexp_cpu(pool, bases, density_map, exponents_orig)
     }
 }
