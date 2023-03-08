@@ -277,12 +277,30 @@ fn best_fft<F: PrimeField + gpu::GpuName>(
         }
     }
 
-    let log_cpus = worker.log_num_threads();
-    for ((a, omega), log_n) in coeffs.iter_mut().zip(omegas.iter()).zip(log_ns.iter()) {
-        if *log_n <= log_cpus {
-            fft_cpu::serial_fft::<F>(*a, omega, *log_n);
-        } else {
-            fft_cpu::parallel_fft::<F>(*a, worker, omega, *log_n, log_cpus);
+    #[cfg(feature = "sppark")]
+    {
+        log::debug!("vmx: running fft on sppark: {:?}", log_ns);
+        for (a, log_n) in coeffs.iter_mut().zip(log_ns) {
+            let concrete_a = unsafe {
+                (a as *mut &mut [F])
+                    .cast::<&mut [blstrs::Scalar]>()
+                    .as_mut()
+                    .unwrap()
+            };
+            fil_sppark::number_theoretic_transform(*concrete_a, *log_n);
+        }
+        return;
+    }
+
+    #[cfg(not(feature = "sppark"))]
+    {
+        let log_cpus = worker.log_num_threads();
+        for ((a, omega), log_n) in coeffs.iter_mut().zip(omegas.iter()).zip(log_ns.iter()) {
+            if *log_n <= log_cpus {
+                fft_cpu::serial_fft::<F>(*a, omega, *log_n);
+            } else {
+                fft_cpu::parallel_fft::<F>(*a, worker, omega, *log_n, log_cpus);
+            }
         }
     }
 }
