@@ -37,8 +37,7 @@ pairing = "0.22"
 ec-gpu = { version = "0.2.0" }
 ec-gpu-gen = { version = "0.5.1" }
 
-blst = { version = "=0.3.10", optional = true }
-blst-msm = { git = "https://github.com/vmx/sppark", branch = "blst-msm-fix", features = ["bls12_381"], optional = true }
+fil-sppark = { git = "https://github.com/filecoin-project/fil-sppark", optional = true }
 fs2 = { version = "0.4.3", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -61,7 +60,7 @@ itertools = "0.10.0"
 default = ["groth16"]
 cuda = ["ec-gpu-gen/cuda", "fs2", "blstrs/gpu"]
 opencl = ["ec-gpu-gen/opencl", "fs2", "blstrs/gpu"]
-sppark = ["blst", "blst-msm"]
+sppark = ["fil-sppark", "fs2"]
 groth16 = []
 
 # This feature disables/modifies long running tests to make the suitable for code coverage

@@ -1,4 +1,4 @@
-use std::{mem, sync::Arc};
+use std::sync::Arc;
 
 use ec_gpu_gen::multiexp_cpu::{multiexp_cpu, QueryDensity, SourceBuilder};
 use ec_gpu_gen::threadpool::{Waiter, Worker};
@@ -63,10 +63,6 @@ where
     multiexp_cpu(pool, bases, density_map, exponents)
 }
 
-unsafe fn as_u8_slice<T: Sized>(value: &T) -> &[u8] {
-    std::slice::from_raw_parts(value as *const T as *const u8, mem::size_of::<T>())
-}
-
 #[cfg(feature = "sppark")]
 pub fn multiexp<'b, Q, D, G, S>(
     pool: &Worker,
@@ -81,8 +77,6 @@ where
     G: PrimeCurveAffine,
     S: SourceBuilder<G>,
 {
-    use group::Curve;
-
     let exponents = density_map
         .as_ref()
         .generate_exps::<G::Scalar>(exponents_orig.clone());
@@ -97,16 +91,28 @@ where
     if exponents_slice.len() > 512
         && std::any::TypeId::of::<G>() == std::any::TypeId::of::<blstrs::G1Affine>()
     {
-        log::debug!("vmx: running multiexp on sppark: {}", exponents_orig.len());
-
-        let bases_blst = unsafe { mem::transmute::<&[_], &[blst::blst_p1_affine]>(&bases_slice) };
-        let exponents_blst =
-            unsafe { mem::transmute::<&[_], &[blst::blst_scalar]>(&exponents_slice) };
-        let point = blst_msm::multi_scalar_mult(&bases_blst, &exponents_blst);
-        let result = unsafe {
-            *(mem::transmute::<_, *const blstrs::G1Projective>(&point) as *const G::Curve)
+        log::debug!("vmx: running multiexp on sppark: {}", exponents_slice.len());
+        let bases_concrete = unsafe {
+            (&bases_slice as *const &[G])
+                .cast::<&[blstrs::G1Affine]>()
+                .as_ref()
+                .unwrap()
         };
-        Waiter::done(Ok(result))
+        let exponents_concrete = unsafe {
+            (&exponents_slice as *const &[<<G as PrimeCurveAffine>::Scalar as PrimeField>::Repr])
+                .cast::<&[[u8; 32]]>()
+                .as_ref()
+                .unwrap()
+        };
+
+        let point = fil_sppark::multi_scalar_multiplication(bases_concrete, exponents_concrete);
+        let point_associate = unsafe {
+            (&point as *const blstrs::G1Projective)
+                .cast::<<G as PrimeCurveAffine>::Curve>()
+                .as_ref()
+                .unwrap()
+        };
+        Waiter::done(Ok(*point_associate))
     } else {
         log::debug!("Falling back to to CPU multiexp");
         multiexp_cpu(pool, bases, density_map, exponents_orig)
