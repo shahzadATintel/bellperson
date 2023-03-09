@@ -114,7 +114,11 @@ where
         };
         Waiter::done(Ok(*point_associate))
     } else {
-        log::debug!("Falling back to to CPU multiexp");
+        log::debug!(
+            "Falling back to to CPU multiexp: size, type: {} {:?}",
+            exponents_slice.len(),
+            std::any::TypeId::of::<G>()
+        );
         multiexp_cpu(pool, bases, density_map, exponents_orig)
     }
 }
