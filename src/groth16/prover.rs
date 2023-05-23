@@ -874,13 +874,16 @@ where
     let mut b_ref = Vec::with_capacity(num_circuits);
     let mut c_ref = Vec::with_capacity(num_circuits);
 
-    for i in 0..num_circuits {
-        a_ref.push(provers[i].a.as_ptr());
-        b_ref.push(provers[i].b.as_ptr());
-        c_ref.push(provers[i].c.as_ptr());
+    for prover in &provers {
+        a_ref.push(prover.a.as_ptr());
+        b_ref.push(prover.b.as_ptr());
+        c_ref.push(prover.c.as_ptr());
     }
 
+
     let mut proofs: Vec<Proof<E>> = Vec::with_capacity(num_circuits);
+    // We call out to C++ code which is unsafe anyway, hence silence this warning.
+    #[allow(clippy::uninit_vec)]
     unsafe { proofs.set_len(num_circuits); }
 
     supraseal_c2::generate_groth16_proof(
@@ -892,8 +895,8 @@ where
         aux_assignments_ref.as_mut_slice(),
         input_assignment_len,
         aux_assignment_len,
-        &provers[0].a_aux_density.bv.as_raw_slice().to_vec(),
-        &provers[0].b_aux_density.bv.as_raw_slice().to_vec(),
+        provers[0].a_aux_density.bv.as_raw_slice(),
+        provers[0].b_aux_density.bv.as_raw_slice(),
         a_aux_density_total,
         b_aux_density_total,
         num_circuits,
