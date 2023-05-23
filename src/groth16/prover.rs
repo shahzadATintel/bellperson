@@ -258,8 +258,7 @@ where
 {
     if circuits.len() == 1 {
         create_proof_batch_priority_inner(circuits, params, None, priority)
-    }
-    else {
+    } else {
         create_proof_batch_priority_inner_modified(circuits, params, None, priority)
     }
 }
@@ -283,8 +282,7 @@ where
 {
     if circuits.len() == 1 {
         create_proof_batch_priority_inner(circuits, params, Some((r_s, s_s)), priority)
-    }
-    else {
+    } else {
         create_proof_batch_priority_inner_modified(circuits, params, Some((r_s, s_s)), priority)
     }
 }
@@ -812,12 +810,8 @@ where
     E::G1Affine: GpuName,
     E::G2Affine: GpuName,
 {
-    let (
-        start,
-        provers,
-        input_assignments_no_repr,
-        aux_assignments_no_repr,
-    ) = synthesize_circuits_batch_modified(circuits)?;
+    let (start, provers, input_assignments_no_repr, aux_assignments_no_repr) =
+        synthesize_circuits_batch_modified(circuits)?;
 
     let input_assignment_len = input_assignments_no_repr[0].len();
     let aux_assignment_len = aux_assignments_no_repr[0].len();
@@ -866,7 +860,8 @@ where
     let mut input_assignments_ref = Vec::with_capacity(num_circuits);
     let mut aux_assignments_ref = Vec::with_capacity(num_circuits);
     for i in 0..num_circuits {
-        input_assignments_ref.push(input_assignments_no_repr[i].as_ptr() as *const _ as *const E::Fr);
+        input_assignments_ref
+            .push(input_assignments_no_repr[i].as_ptr() as *const _ as *const E::Fr);
         aux_assignments_ref.push(aux_assignments_no_repr[i].as_ptr() as *const _ as *const E::Fr);
     }
 
@@ -880,11 +875,12 @@ where
         c_ref.push(prover.c.as_ptr());
     }
 
-
     let mut proofs: Vec<Proof<E>> = Vec::with_capacity(num_circuits);
     // We call out to C++ code which is unsafe anyway, hence silence this warning.
     #[allow(clippy::uninit_vec)]
-    unsafe { proofs.set_len(num_circuits); }
+    unsafe {
+        proofs.set_len(num_circuits);
+    }
 
     supraseal_c2::generate_groth16_proof(
         a_ref.as_slice(),
