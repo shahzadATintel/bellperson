@@ -2,30 +2,34 @@
 //!
 //! [Groth16]: https://eprint.iacr.org/2016/260
 
-// The `DummyEngine` currently only works on the CPU as G1/G2 is using `Fr` and `Fr` isn't
-// supported by the GPU kernels
-#[cfg(all(test, not(any(feature = "cuda", feature = "opencl"))))]
-mod tests;
-
 pub mod aggregate;
+#[cfg(not(feature = "cuda-supraseal"))]
 mod ext;
+#[cfg(feature = "cuda-supraseal")]
+mod ext_supraseal;
 mod generator;
 #[cfg(not(target_arch = "wasm32"))]
 mod mapped_params;
 mod params;
 mod proof;
 mod prover;
+#[cfg(feature = "cuda-supraseal")]
+mod supraseal_params;
 mod verifier;
 mod verifying_key;
 
 mod multiscalar;
 
+#[cfg(not(feature = "cuda-supraseal"))]
 pub use self::ext::*;
+#[cfg(feature = "cuda-supraseal")]
+pub use self::ext_supraseal::*;
 pub use self::generator::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use self::mapped_params::*;
 pub use self::params::*;
 pub use self::proof::*;
-pub use self::prover::*;
+#[cfg(feature = "cuda-supraseal")]
+pub use self::supraseal_params::SuprasealParameters;
 pub use self::verifier::*;
 pub use self::verifying_key::*;

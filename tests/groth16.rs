@@ -1,3 +1,7 @@
+// All those tests depend on the `DummyEngine`, SupraSeal is only implemented for BLS12, hence the
+// tests are disabled for SupraSeal.
+#![cfg(not(feature = "cuda-supraseal"))]
+
 use ff::{Field, PrimeField};
 use group::{Curve, Group};
 use rand_core::SeedableRng;
@@ -9,10 +13,10 @@ use self::dummy_engine::*;
 use std::marker::PhantomData;
 use std::ops::{AddAssign, Mul, MulAssign, SubAssign};
 
-use super::{
+use bellperson::groth16::{
     create_proof, create_proof_batch, generate_parameters, prepare_verifying_key, verify_proof,
 };
-use crate::{Circuit, ConstraintSystem, SynthesisError};
+use bellperson::{Circuit, ConstraintSystem, SynthesisError};
 
 #[derive(Clone)]
 struct XorDemo<Scalar: PrimeField> {
@@ -430,7 +434,7 @@ fn test_create_batch_single() {
 #[test]
 #[allow(clippy::manual_swap)]
 fn test_verify_random_single() {
-    use crate::groth16::{create_random_proof, generate_random_parameters, Proof};
+    use bellperson::groth16::{create_random_proof, generate_random_parameters, Proof};
     use blstrs::{Bls12, G1Projective, G2Projective, Scalar as Fr};
 
     let mut rng = XorShiftRng::from_seed([
@@ -507,7 +511,7 @@ fn test_verify_random_single() {
 #[test]
 #[allow(clippy::manual_swap)]
 fn test_verify_random_batch() {
-    use crate::groth16::{
+    use bellperson::groth16::{
         create_random_proof_batch, generate_random_parameters, verify_proofs_batch, Proof,
     };
     use blstrs::{Bls12, G1Projective, G2Projective, Scalar as Fr};
