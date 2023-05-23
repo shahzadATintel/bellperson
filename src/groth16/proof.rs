@@ -9,6 +9,7 @@ use rayon::prelude::*;
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+#[repr(C)]
 #[derive(Clone, Debug)]
 pub struct Proof<E: Engine> {
     pub a: E::G1Affine,

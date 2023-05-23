@@ -36,6 +36,7 @@ pairing = "0.23"
 blstrs = { version = "0.7.0", features = ["__private_bench"] }
 ec-gpu = { version = "0.2.0" }
 ec-gpu-gen = { version = "0.6.0" }
+supraseal-c2 = { git = "https://github.com/supranational/supra_seal.git" }
 
 
 fs2 = { version = "0.4.3", optional = true }
@@ -92,3 +93,8 @@ members = [
 blstrs = { version = "0.7.0", features = ["__private_bench"] }
 ec-gpu-gen = { version = "0.6.0" }
 rustversion = "1.0.6"
+
+[patch.crates-io]
+# `supraseal-c2` needs a non yet released version of `blst`. It doesn't need it
+# for their rust, but for their C++ code.
+blst = { git = "https://github.com/supranational/blst" }
