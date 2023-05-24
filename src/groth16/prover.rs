@@ -256,10 +256,18 @@ where
     E::G1Affine: GpuName,
     E::G2Affine: GpuName,
 {
+    #[cfg(not(feature = "supraseal"))]
+    {
+        create_proof_batch_priority_inner(circuits, params, None, priority)
+    }
+
+    #[cfg(feature = "supraseal")]
+    // Currently the supraseal only works with PoReps. This is an easy hack to distinguish between
+    // PoReps and other proofs, as the number of PoRep circuits is always > 1.
     if circuits.len() == 1 {
         create_proof_batch_priority_inner(circuits, params, None, priority)
     } else {
-        create_proof_batch_priority_inner_modified(circuits, params, None, priority)
+        create_proof_batch_priority_inner_supraseal(circuits, params, None, priority)
     }
 }
 
@@ -280,10 +288,18 @@ where
     E::G1Affine: GpuName,
     E::G2Affine: GpuName,
 {
+    #[cfg(not(feature = "supraseal"))]
+    {
+        create_proof_batch_priority_inner(circuits, params, Some((r_s, s_s)), priority)
+    }
+
+    #[cfg(feature = "supraseal")]
+    // Currently the supraseal only works with PoReps. This is an easy hack to distinguish between
+    // PoReps and other proofs, as the number of PoRep circuits is always > 1.
     if circuits.len() == 1 {
         create_proof_batch_priority_inner(circuits, params, Some((r_s, s_s)), priority)
     } else {
-        create_proof_batch_priority_inner_modified(circuits, params, Some((r_s, s_s)), priority)
+        create_proof_batch_priority_inner_supraseal(circuits, params, Some((r_s, s_s)), priority)
     }
 }
 
@@ -795,9 +811,10 @@ mod tests {
     }
 }
 
+#[cfg(feature = "supraseal")]
 #[allow(clippy::type_complexity)]
 #[allow(clippy::needless_collect)]
-fn create_proof_batch_priority_inner_modified<E, C, P: ParameterSource<E>>(
+fn create_proof_batch_priority_inner_supraseal<E, C, P: ParameterSource<E>>(
     circuits: Vec<C>,
     params: P,
     randomization: Option<(Vec<E::Fr>, Vec<E::Fr>)>,
@@ -811,7 +828,7 @@ where
     E::G2Affine: GpuName,
 {
     let (start, provers, input_assignments_no_repr, aux_assignments_no_repr) =
-        synthesize_circuits_batch_modified(circuits)?;
+        synthesize_circuits_batch_supraseal(circuits)?;
 
     let input_assignment_len = input_assignments_no_repr[0].len();
     let aux_assignment_len = aux_assignments_no_repr[0].len();
@@ -907,8 +924,9 @@ where
     Ok(proofs)
 }
 
+#[cfg(feature = "supraseal")]
 #[allow(clippy::type_complexity)]
-fn synthesize_circuits_batch_modified<Scalar, C>(
+fn synthesize_circuits_batch_supraseal<Scalar, C>(
     circuits: Vec<C>,
 ) -> Result<
     (

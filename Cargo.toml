@@ -36,10 +36,10 @@ pairing = "0.23"
 blstrs = { version = "0.7.0", features = ["__private_bench"] }
 ec-gpu = { version = "0.2.0" }
 ec-gpu-gen = { version = "0.6.0" }
-supraseal-c2 = { git = "https://github.com/supranational/supra_seal.git" }
 
 
 fs2 = { version = "0.4.3", optional = true }
+supraseal-c2 = { git = "https://github.com/supranational/supra_seal.git", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 memmap2 = "0.5.8"
@@ -62,6 +62,7 @@ default = ["groth16"]
 cuda = ["ec-gpu-gen/cuda", "fs2", "blstrs/gpu"]
 opencl = ["ec-gpu-gen/opencl", "fs2", "blstrs/gpu"]
 groth16 = []
+supraseal = ["supraseal-c2"]
 
 # This feature disables/modifies long running tests to make the suitable for code coverage
 # reporting
