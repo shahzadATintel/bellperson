@@ -15,6 +15,8 @@ mod mapped_params;
 mod params;
 mod proof;
 mod prover;
+#[cfg(feature = "supraseal")]
+mod supraseal_params;
 mod verifier;
 mod verifying_key;
 
@@ -27,5 +29,7 @@ pub use self::mapped_params::*;
 pub use self::params::*;
 pub use self::proof::*;
 pub use self::prover::*;
+#[cfg(feature = "supraseal")]
+pub use self::supraseal_params::*;
 pub use self::verifier::*;
 pub use self::verifying_key::*;
