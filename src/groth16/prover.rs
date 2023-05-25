@@ -816,7 +816,9 @@ mod tests {
 #[allow(clippy::needless_collect)]
 fn create_proof_batch_priority_inner_supraseal<E, C, P: ParameterSource<E>>(
     circuits: Vec<C>,
-    params: P,
+    // TODO vmx 2023-05-25: params will be used, once passing on the parameters is possible. See
+    // https://github.com/supranational/supra_seal/issues/3#issuecomment-1562545269.
+    _params: P,
     randomization: Option<(Vec<E::Fr>, Vec<E::Fr>)>,
     _priority: bool,
 ) -> Result<Vec<Proof<E>>, SynthesisError>
@@ -832,18 +834,20 @@ where
 
     let input_assignment_len = input_assignments_no_repr[0].len();
     let aux_assignment_len = aux_assignments_no_repr[0].len();
-    let vk = params.get_vk(input_assignment_len)?.clone();
     let n = provers[0].a.len();
     let a_aux_density_total = provers[0].a_aux_density.get_total_density();
     let b_input_density_total = provers[0].b_input_density.get_total_density();
     let b_aux_density_total = provers[0].b_aux_density.get_total_density();
     let num_circuits = provers.len();
 
-    if (vk.delta_g1.is_identity() | vk.delta_g2.is_identity()).into() {
-        // If this element is zero, someone is trying to perform a
-        // subversion-CRS attack.
-        return Err(SynthesisError::UnexpectedIdentity);
-    }
+    // NOTE vmx 2023-05-25: This should be moved to the C++ code base. See
+    // https://github.com/supranational/supra_seal/issues/4 for more information.
+    //let vk = params.get_vk(input_assignment_len)?.clone();
+    //if (vk.delta_g1.is_identity() | vk.delta_g2.is_identity()).into() {
+    //    // If this element is zero, someone is trying to perform a
+    //    // subversion-CRS attack.
+    //    return Err(SynthesisError::UnexpectedIdentity);
+    //}
 
     let (r_s, s_s) = randomization.unwrap_or((
         vec![E::Fr::ZERO; num_circuits],
