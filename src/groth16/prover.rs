@@ -256,19 +256,7 @@ where
     E::G1Affine: GpuName,
     E::G2Affine: GpuName,
 {
-    #[cfg(not(feature = "supraseal"))]
-    {
-        create_proof_batch_priority_inner(circuits, params, None, priority)
-    }
-
-    #[cfg(feature = "supraseal")]
-    // Currently the supraseal only works with PoReps. This is an easy hack to distinguish between
-    // PoReps and other proofs, as the number of PoRep circuits is always > 1.
-    if circuits.len() == 1 {
-        create_proof_batch_priority_inner(circuits, params, None, priority)
-    } else {
-        create_proof_batch_priority_inner_supraseal(circuits, params, None, priority)
-    }
+    create_proof_batch_priority_inner(circuits, params, None, priority)
 }
 
 /// creates a batch of proofs where the randomization vector is already
@@ -288,21 +276,10 @@ where
     E::G1Affine: GpuName,
     E::G2Affine: GpuName,
 {
-    #[cfg(not(feature = "supraseal"))]
-    {
-        create_proof_batch_priority_inner(circuits, params, Some((r_s, s_s)), priority)
-    }
-
-    #[cfg(feature = "supraseal")]
-    // Currently the supraseal only works with PoReps. This is an easy hack to distinguish between
-    // PoReps and other proofs, as the number of PoRep circuits is always > 1.
-    if circuits.len() == 1 {
-        create_proof_batch_priority_inner(circuits, params, Some((r_s, s_s)), priority)
-    } else {
-        create_proof_batch_priority_inner_supraseal(circuits, params, Some((r_s, s_s)), priority)
-    }
+    create_proof_batch_priority_inner(circuits, params, Some((r_s, s_s)), priority)
 }
 
+#[cfg(not(feature = "supraseal"))]
 #[allow(clippy::drop_non_drop)]
 #[allow(clippy::type_complexity)]
 #[allow(clippy::needless_collect)]
@@ -814,7 +791,7 @@ mod tests {
 #[cfg(feature = "supraseal")]
 #[allow(clippy::type_complexity)]
 #[allow(clippy::needless_collect)]
-fn create_proof_batch_priority_inner_supraseal<E, C, P: ParameterSource<E>>(
+fn create_proof_batch_priority_inner<E, C, P: ParameterSource<E>>(
     circuits: Vec<C>,
     // TODO vmx 2023-05-25: params will be used, once passing on the parameters is possible. See
     // https://github.com/supranational/supra_seal/issues/3#issuecomment-1562545269.
