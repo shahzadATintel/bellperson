@@ -806,6 +806,11 @@ where
     E::G1Affine: GpuName,
     E::G2Affine: GpuName,
 {
+    info!(
+        "Bellperson {} with SupraSeal is being used!",
+        BELLMAN_VERSION
+    );
+
     let (start, provers, input_assignments_no_repr, aux_assignments_no_repr) =
         synthesize_circuits_batch_supraseal(circuits)?;
 
