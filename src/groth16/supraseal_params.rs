@@ -1,8 +1,10 @@
+use std::io;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use pairing::MultiMillerLoop;
+use supraseal_c2::SRS;
 
 use crate::groth16::{ParameterSource, VerifyingKey};
 use crate::SynthesisError;
@@ -10,31 +12,30 @@ use crate::SynthesisError;
 // The parameters for Supraseal live on the C++ side. We take this just as a wrapper so that their
 // are properly initialized.
 pub struct SuprasealParameters<E> {
-    /// The parameter file we're reading from.
-    pub param_file_path: PathBuf,
+    ///// The parameter file we're reading from.
+    //pub param_file_path: PathBuf,
+    pub srs: SRS,
     _phantom: PhantomData<E>,
 }
 
+unsafe impl<E> Sync for SuprasealParameters<E> {}
+
 impl<E> SuprasealParameters<E> {
-    pub fn new(param_file_path: PathBuf) -> Self {
-        // Initialize the parameters on the C++ side.
-        supraseal_c2::read_srs(
-            param_file_path
-                .to_str()
-                .expect("path must be valid UTF-8")
-                .to_string(),
-        );
+    pub fn new(param_file_path: PathBuf) -> io::Result<Self> {
+        //// Initialize the parameters on the C++ side.
+        //supraseal_c2::read_srs(
+        //    param_file_path
+        //        .to_str()
+        //        .expect("path must be valid UTF-8")
+        //        .to_string(),
+        //);
+        let srs = SRS::try_new(param_file_path).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, String::from(err)))?;
 
-        Self {
-            param_file_path,
+        Ok(Self {
+            //param_file_path,
+            srs,
             _phantom: PhantomData::<E>,
-        }
-    }
-}
-
-impl<E> Drop for SuprasealParameters<E> {
-    fn drop(&mut self) {
-        supraseal_c2::reset_srs();
+        })
     }
 }
 
@@ -79,5 +80,8 @@ where
         _num_b_g2: usize,
     ) -> Result<(Self::G2Builder, Self::G2Builder), SynthesisError> {
         unimplemented!()
+    }
+    fn get_supraseal_srs(&self) -> Option<supraseal_c2::SRS> {
+        Some(self.srs.clone())
     }
 }

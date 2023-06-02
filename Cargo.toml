@@ -98,4 +98,5 @@ rustversion = "1.0.6"
 [patch.crates-io]
 # `supraseal-c2` needs a non yet released version of `blst`. It doesn't need it
 # for their rust, but for their C++ code.
-blst = { git = "https://github.com/supranational/blst" }
+blst = { git = "https://github.com/supranational/blst", rev = "b4ebf880" }
+sppark = { git = "https://github.com/supranational/sppark", rev = "776752d1" }

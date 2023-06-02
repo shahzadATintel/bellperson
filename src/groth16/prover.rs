@@ -11,6 +11,7 @@ use rayon::prelude::*;
 use super::{ParameterSource, Proof};
 use crate::domain::EvaluationDomain;
 use crate::gpu::{GpuName, LockedFftKernel, LockedMultiexpKernel};
+//use crate::groth16::SuprasealParameters;
 use crate::multiexp::multiexp;
 use crate::{
     Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable, BELLMAN_VERSION,
@@ -792,10 +793,12 @@ mod tests {
 #[allow(clippy::type_complexity)]
 #[allow(clippy::needless_collect)]
 fn create_proof_batch_priority_inner<E, C, P: ParameterSource<E>>(
+//fn create_proof_batch_priority_inner<E, C>(
     circuits: Vec<C>,
     // TODO vmx 2023-05-25: params will be used, once passing on the parameters is possible. See
     // https://github.com/supranational/supra_seal/issues/3#issuecomment-1562545269.
-    _params: P,
+    //params: SuprasealParameters<E>,
+    params: P,
     randomization: Option<(Vec<E::Fr>, Vec<E::Fr>)>,
     _priority: bool,
 ) -> Result<Vec<Proof<E>>, SynthesisError>
@@ -821,15 +824,6 @@ where
     let b_input_density_total = provers[0].b_input_density.get_total_density();
     let b_aux_density_total = provers[0].b_aux_density.get_total_density();
     let num_circuits = provers.len();
-
-    // NOTE vmx 2023-05-25: This should be moved to the C++ code base. See
-    // https://github.com/supranational/supra_seal/issues/4 for more information.
-    //let vk = params.get_vk(input_assignment_len)?.clone();
-    //if (vk.delta_g1.is_identity() | vk.delta_g2.is_identity()).into() {
-    //    // If this element is zero, someone is trying to perform a
-    //    // subversion-CRS attack.
-    //    return Err(SynthesisError::UnexpectedIdentity);
-    //}
 
     let (r_s, s_s) = randomization.unwrap_or((
         vec![E::Fr::ZERO; num_circuits],
@@ -902,6 +896,7 @@ where
         r_s.as_slice(),
         s_s.as_slice(),
         proofs.as_mut_slice(),
+        &params.get_supraseal_srs().unwrap(),
     );
 
     let proof_time = start.elapsed();

@@ -430,6 +430,10 @@ where
         num_inputs: usize,
         num_aux: usize,
     ) -> Result<(Self::G2Builder, Self::G2Builder), SynthesisError>;
+    #[cfg(feature = "supraseal")]
+    fn get_supraseal_srs(&self) -> Option<supraseal_c2::SRS> {
+        None
+    }
 }
 
 impl<'a, E> ParameterSource<E> for &'a Parameters<E>
