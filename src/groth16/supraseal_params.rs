@@ -19,6 +19,7 @@ pub struct SuprasealParameters<E> {
 }
 
 unsafe impl<E> Sync for SuprasealParameters<E> {}
+unsafe impl<E> Send for SuprasealParameters<E> {}
 
 impl<E> SuprasealParameters<E> {
     pub fn new(param_file_path: PathBuf) -> io::Result<Self> {
@@ -82,6 +83,7 @@ where
         unimplemented!()
     }
     fn get_supraseal_srs(&self) -> Option<supraseal_c2::SRS> {
+        println!("vmx: bellperson: groth16: supraseal get srs was called");
         Some(self.srs.clone())
     }
 }
