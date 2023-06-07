@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use log::debug;
 use pairing::MultiMillerLoop;
 use supraseal_c2::SRS;
 
@@ -30,6 +31,7 @@ impl<E> SuprasealParameters<E> {
         //        .expect("path must be valid UTF-8")
         //        .to_string(),
         //);
+        debug!("Using parameter file at {:?}", param_file_path);
         let srs = SRS::try_new(param_file_path).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, String::from(err)))?;
 
         Ok(Self {
