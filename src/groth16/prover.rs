@@ -280,7 +280,7 @@ where
     create_proof_batch_priority_inner(circuits, params, Some((r_s, s_s)), priority)
 }
 
-#[cfg(not(feature = "supraseal"))]
+#[cfg(not(feature = "cuda-supraseal"))]
 #[allow(clippy::drop_non_drop)]
 #[allow(clippy::type_complexity)]
 #[allow(clippy::needless_collect)]
@@ -789,7 +789,7 @@ mod tests {
     }
 }
 
-#[cfg(feature = "supraseal")]
+#[cfg(feature = "cuda-supraseal")]
 #[allow(clippy::type_complexity)]
 #[allow(clippy::needless_collect)]
 fn create_proof_batch_priority_inner<E, C, P: ParameterSource<E>>(
@@ -905,7 +905,7 @@ where
     Ok(proofs)
 }
 
-#[cfg(feature = "supraseal")]
+#[cfg(feature = "cuda-supraseal")]
 #[allow(clippy::type_complexity)]
 fn synthesize_circuits_batch_supraseal<Scalar, C>(
     circuits: Vec<C>,

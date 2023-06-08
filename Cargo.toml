@@ -62,7 +62,7 @@ default = ["groth16"]
 cuda = ["ec-gpu-gen/cuda", "fs2", "blstrs/gpu"]
 opencl = ["ec-gpu-gen/opencl", "fs2", "blstrs/gpu"]
 groth16 = []
-supraseal = ["supraseal-c2"]
+cuda-supraseal = ["supraseal-c2"]
 
 # This feature disables/modifies long running tests to make the suitable for code coverage
 # reporting

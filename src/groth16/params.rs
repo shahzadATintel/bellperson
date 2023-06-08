@@ -430,7 +430,7 @@ where
         num_inputs: usize,
         num_aux: usize,
     ) -> Result<(Self::G2Builder, Self::G2Builder), SynthesisError>;
-    #[cfg(feature = "supraseal")]
+    #[cfg(feature = "cuda-supraseal")]
     fn get_supraseal_srs(&self) -> Option<supraseal_c2::SRS> {
         println!("vmx: bellperson: groth16: mmaped params: get supraseal srs was called :(");
         None
