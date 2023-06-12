@@ -68,6 +68,7 @@ where
 impl<E> Parameters<E>
 where
     E: MultiMillerLoop,
+    E::G2Prepared: std::fmt::Debug,
 {
     pub fn write<W: Write>(&self, mut writer: W) -> io::Result<()> {
         self.vk.write(&mut writer)?;

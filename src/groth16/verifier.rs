@@ -14,6 +14,7 @@ pub fn prepare_verifying_key<E: Engine + MultiMillerLoop>(
 ) -> PreparedVerifyingKey<E>
 where
     E: MultiMillerLoop,
+    E::G2Prepared: std::fmt::Debug,
 {
     let neg_gamma = -vk.gamma_g2;
     let neg_delta = -vk.delta_g2;
@@ -42,6 +43,7 @@ pub fn verify_proof<'a, E>(
 ) -> Result<bool, SynthesisError>
 where
     E: MultiMillerLoop,
+    E::G2Prepared: std::fmt::Debug,
     <<E as Engine>::Fr as PrimeField>::Repr: Sync,
 {
     use multiscalar::MultiscalarPrecomp;
@@ -114,6 +116,7 @@ pub fn verify_proofs_batch<'a, E, R>(
 ) -> Result<bool, SynthesisError>
 where
     E: MultiMillerLoop,
+    E::G2Prepared: std::fmt::Debug,
     <E::Fr as PrimeField>::Repr: Sync + Copy,
     R: rand::RngCore,
 {

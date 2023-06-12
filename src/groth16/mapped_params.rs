@@ -18,6 +18,7 @@ use super::{ParameterSource, PreparedVerifyingKey, VerifyingKey};
 pub struct MappedParameters<E>
 where
     E: MultiMillerLoop,
+    E::G2Prepared: std::fmt::Debug,
 {
     /// The parameter file we're reading from.  
     pub param_file_path: PathBuf,
@@ -56,6 +57,7 @@ where
 impl<'a, E> ParameterSource<E> for &'a MappedParameters<E>
 where
     E: MultiMillerLoop,
+    E::G2Prepared: std::fmt::Debug,
 {
     type G1Builder = (Arc<Vec<E::G1Affine>>, usize);
     type G2Builder = (Arc<Vec<E::G2Affine>>, usize);

@@ -197,9 +197,11 @@ impl<E: Engine + MultiMillerLoop> VerifyingKey<E> {
     }
 }
 
+#[derive(Debug)]
 pub struct PreparedVerifyingKey<E>
 where
     E: MultiMillerLoop,
+    <E as MultiMillerLoop>::G2Prepared: std::fmt::Debug,
 {
     /// Pairing result of alpha*beta
     pub(crate) alpha_g1_beta_g2: <E as Engine>::Gt,

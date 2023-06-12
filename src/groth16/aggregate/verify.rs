@@ -56,6 +56,7 @@ where
     E::G1: Serialize,
     E::G1Affine: Serialize,
     E::G2Affine: Serialize,
+    E::G2Prepared: std::fmt::Debug,
     R: rand_core::RngCore + Send,
 {
     info!("verify_aggregate_proof");
@@ -224,6 +225,7 @@ where
     E::G1: Serialize,
     E::G1Affine: Serialize,
     E::G2Affine: Serialize,
+    E::G2Prepared: std::fmt::Debug,
     R: rand_core::RngCore + Send,
 {
     info!("verify_aggregate_proof");
