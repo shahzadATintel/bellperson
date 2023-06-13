@@ -30,6 +30,6 @@ pub use self::params::*;
 pub use self::proof::*;
 pub use self::prover::*;
 #[cfg(feature = "cuda-supraseal")]
-pub use self::supraseal_params::*;
+pub use self::supraseal_params::SuprasealParameters;
 pub use self::verifier::*;
 pub use self::verifying_key::*;
