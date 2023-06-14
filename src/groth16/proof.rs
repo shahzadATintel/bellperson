@@ -234,7 +234,7 @@ mod test_with_bls12_381 {
     use bincode::{deserialize, serialize};
     use blstrs::{Bls12, Scalar as Fr};
     use ff::{Field, PrimeField};
-    use rand::thread_rng;
+    use rand::{rngs::StdRng, thread_rng, SeedableRng};
 
     #[test]
     fn test_size() {
@@ -369,7 +369,7 @@ mod test_with_bls12_381 {
             }
         }
 
-        let rng = &mut thread_rng();
+        let rng = &mut StdRng::seed_from_u64(1234);
 
         let groth_params =
             generate_random_parameters::<Bls12, _, _>(MySillyCircuit { a: None, b: None }, rng)

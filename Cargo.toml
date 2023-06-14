@@ -99,7 +99,9 @@ rustversion = "1.0.6"
 [patch.crates-io]
 # `supraseal-c2` needs a non yet released version of `blst`. It doesn't need it
 # for their rust, but for their C++ code.
-blst = { git = "https://github.com/supranational/blst", rev = "a8cd361c9f671577aeab3f074098443af92a53fc"}
+#blst = { git = "https://github.com/supranational/blst", rev = "a8cd361c9f671577aeab3f074098443af92a53fc"}
+blst = { git = "https://github.com/supranational/blst" }
 # Patching `sppark` is needed as supraseal-c2 depends on `sppark` master, but
 # defines the latest released version in its `Cargo.toml`
-sppark = { git = "https://github.com/supranational/sppark", rev = "ff3bf1caff6d7da7c3978395ddef03586ea3d2e4" }
+#sppark = { git = "https://github.com/supranational/sppark", rev = "ff3bf1caff6d7da7c3978395ddef03586ea3d2e4" }
+sppark = { git = "https://github.com/supranational/sppark" }
