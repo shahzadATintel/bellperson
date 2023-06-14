@@ -1,14 +1,12 @@
-use std::io;
-use std::marker::PhantomData;
-use std::path::PathBuf;
-use std::sync::Arc;
+use std::{io, marker::PhantomData, path::PathBuf, sync::Arc};
 
-use log::debug;
 use pairing::MultiMillerLoop;
 use supraseal_c2::SRS;
 
-use crate::groth16::{ParameterSource, VerifyingKey};
-use crate::SynthesisError;
+use crate::{
+    groth16::{ParameterSource, VerifyingKey},
+    SynthesisError,
+};
 
 // The parameters for Supraseal live on the C++ side. We take this just as a wrapper so that their
 // are properly initialized.
