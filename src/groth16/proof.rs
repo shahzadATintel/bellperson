@@ -335,4 +335,88 @@ mod test_with_bls12_381 {
             assert_eq!(de_proof, proof);
         }
     }
+
+    #[test]
+    fn supraseal() {
+        env_logger::try_init().ok();
+
+        struct MySillyCircuit<Scalar: PrimeField> {
+            a: Option<Scalar>,
+            b: Option<Scalar>,
+        }
+
+        impl<Scalar: PrimeField> Circuit<Scalar> for MySillyCircuit<Scalar> {
+            fn synthesize<CS: ConstraintSystem<Scalar>>(
+                self,
+                cs: &mut CS,
+            ) -> Result<(), SynthesisError> {
+                let a = cs.alloc(|| "a", || self.a.ok_or(SynthesisError::AssignmentMissing))?;
+                let b = cs.alloc(|| "b", || self.b.ok_or(SynthesisError::AssignmentMissing))?;
+                let c = cs.alloc_input(
+                    || "c",
+                    || {
+                        let mut a = self.a.ok_or(SynthesisError::AssignmentMissing)?;
+                        let b = self.b.ok_or(SynthesisError::AssignmentMissing)?;
+
+                        a.mul_assign(&b);
+                        Ok(a)
+                    },
+                )?;
+
+                cs.enforce(|| "a*b=c", |lc| lc + a, |lc| lc + b, |lc| lc + c);
+
+                Ok(())
+            }
+        }
+
+        let rng = &mut thread_rng();
+
+        let params =
+            generate_random_parameters::<Bls12, _, _>(MySillyCircuit { a: None, b: None }, rng)
+                .unwrap();
+
+        {
+            let mut v = vec![];
+
+            params.write(&mut v).unwrap();
+            assert_eq!(v.len(), 2136);
+
+            let de_params = Parameters::read(&v[..], true).unwrap();
+            assert!(params == de_params);
+
+            let de_params = Parameters::read(&v[..], false).unwrap();
+            assert!(params == de_params);
+        }
+
+        let pvk = prepare_verifying_key::<Bls12>(&params.vk);
+
+        // Write out parameters to a temp file.
+        let mut params_file =
+            tempfile::NamedTempFile::new().expect("failed to create temp parameters file");
+        params
+            .write(&mut params_file)
+            .expect("failed to write out srs");
+        params_file.flush().expect("failed to flush srs write");
+        let supraseal_params = crate::groth16::SuprasealParameters::<Bls12>::new(params_file.path().to_path_buf())
+            .expect("failed to read srs");
+        // Persist file so that we can inspect it.
+        params_file.persist("/tmp/params.bin").expect("failed to persist parameter file");
+
+        let a = Fr::random(&mut *rng);
+        let b = Fr::random(&mut *rng);
+        let mut c = a;
+        c.mul_assign(&b);
+
+        let proof = create_random_proof(
+            MySillyCircuit {
+                a: Some(a),
+                b: Some(b),
+            },
+            &supraseal_params,
+            rng,
+        )
+            .unwrap();
+
+        assert!(verify_proof(&pvk, &proof, &[c]).unwrap());
+    }
 }
