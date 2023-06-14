@@ -102,7 +102,10 @@ where
     // Calculate the final exponentiation
     let actual = ml_all.final_exponentiation();
 
-    println!("vmx: verifier: actual, expected:\n{:?}\n{:?}", actual, pvk.alpha_g1_beta_g2);
+    println!(
+        "vmx: verifier: actual, expected:\n{:?}\n{:?}",
+        actual, pvk.alpha_g1_beta_g2
+    );
     Ok(actual == pvk.alpha_g1_beta_g2)
 }
 

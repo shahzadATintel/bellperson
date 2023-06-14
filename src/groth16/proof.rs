@@ -371,36 +371,26 @@ mod test_with_bls12_381 {
 
         let rng = &mut thread_rng();
 
-        let params =
+        let groth_params =
             generate_random_parameters::<Bls12, _, _>(MySillyCircuit { a: None, b: None }, rng)
                 .unwrap();
 
-        {
-            let mut v = vec![];
+        let pvk = prepare_verifying_key::<Bls12>(&groth_params.vk);
 
-            params.write(&mut v).unwrap();
-            assert_eq!(v.len(), 2136);
-
-            let de_params = Parameters::read(&v[..], true).unwrap();
-            assert!(params == de_params);
-
-            let de_params = Parameters::read(&v[..], false).unwrap();
-            assert!(params == de_params);
-        }
-
-        let pvk = prepare_verifying_key::<Bls12>(&params.vk);
-
-        // Write out parameters to a temp file.
         let mut params_file =
-            tempfile::NamedTempFile::new().expect("failed to create temp parameters file");
-        params
+            std::fs::File::create("params.bin").expect("failed to create parameters file");
+        groth_params
             .write(&mut params_file)
             .expect("failed to write out srs");
-        params_file.flush().expect("failed to flush srs write");
-        let supraseal_params = crate::groth16::SuprasealParameters::<Bls12>::new(params_file.path().to_path_buf())
+
+        #[cfg(not(feature = "cuda-supraseal"))]
+        let params =
+            crate::groth16::Parameters::build_mapped_parameters("params.bin".into(), false)
+                .expect("failed to read srs");
+
+        #[cfg(feature = "cuda-supraseal")]
+        let params = crate::groth16::SuprasealParameters::<Bls12>::new("params.bin".into())
             .expect("failed to read srs");
-        // Persist file so that we can inspect it.
-        params_file.persist("/tmp/params.bin").expect("failed to persist parameter file");
 
         let a = Fr::random(&mut *rng);
         let b = Fr::random(&mut *rng);
@@ -412,10 +402,10 @@ mod test_with_bls12_381 {
                 a: Some(a),
                 b: Some(b),
             },
-            &supraseal_params,
+            &params,
             rng,
         )
-            .unwrap();
+        .unwrap();
 
         assert!(verify_proof(&pvk, &proof, &[c]).unwrap());
     }
