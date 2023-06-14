@@ -58,7 +58,8 @@ rand = { version = "0.8", default-features = false, features = ["std", "std_rng"
 itertools = "0.10.0"
 
 [features]
-default = ["groth16"]
+#default = ["groth16"]
+default = ["groth16", "cuda-supraseal"]
 cuda = ["ec-gpu-gen/cuda", "fs2", "blstrs/gpu"]
 opencl = ["ec-gpu-gen/opencl", "fs2", "blstrs/gpu"]
 groth16 = []

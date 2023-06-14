@@ -9,6 +9,8 @@ use ff::Field;
 use blstrs::Bls12;
 use pairing::Engine;
 // We'll use these interfaces to construct our circuit.
+#[cfg(feature = "cuda-supraseal")]
+use bellperson::groth16::SuprasealParameters;
 use bellperson::groth16::{
     aggregate::AggregateVersion, create_random_proof, generate_random_parameters,
     prepare_verifying_key, verify_proof, Parameters, Proof,
@@ -166,6 +168,16 @@ impl<E: Engine> Circuit<E::Fr> for MinRoot<E> {
     }
 }
 
+//// Returns the parameters in the way SupraSeal is expecting them.
+//fn supraseal_params(params: Parameters<Bls12>) -> SuprasealParameters<Bls12> {
+//    use std::io::Write;
+//    // Write out parameters to a temp file
+//    let mut params_file = tempfile::NamedTempFile::new().expect("failed to create temp parameters file");
+//    params.write(&mut params_file).expect("failed to write out srs");
+//    params_file.flush().expect("failed to flush srs write");
+//    SuprasealParameters::new(params_file.path().to_path_buf()).expect("failed to read srs")
+//}
+
 #[test]
 fn minroot_test() {
     let rng = &mut rand_core::OsRng;
@@ -179,6 +191,18 @@ fn minroot_test() {
 
     // Prepare the verification key (for proof verification)
     let pvk = prepare_verifying_key(&params.vk);
+
+    //let (params, tmpfile) = supraseal_params(params);
+    use std::io::Write;
+    // Write out parameters to a temp file
+    let mut params_file =
+        tempfile::NamedTempFile::new().expect("failed to create temp parameters file");
+    params
+        .write(&mut params_file)
+        .expect("failed to write out srs");
+    params_file.flush().expect("failed to flush srs write");
+    let supraseal_params = SuprasealParameters::<Bls12>::new(params_file.path().to_path_buf())
+        .expect("failed to read srs");
 
     let mut proof_vec = vec![];
     let mut proofs = vec![];
@@ -200,7 +224,7 @@ fn minroot_test() {
         };
 
         // Create a groth16 proof with our parameters.
-        let proof = create_random_proof(c, &params, rng).unwrap();
+        let proof = create_random_proof(c, &supraseal_params, rng).unwrap();
 
         proof.write(&mut proof_vec).unwrap();
     }
