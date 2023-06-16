@@ -257,7 +257,7 @@ workflows:
             - cargo_fetch
       - test:
           name: "Test SupraSeal"
-          cargo-args: "--workspace --release --features cuda-supraseal"
+          cargo-args: "--release --features cuda-supraseal"
           requires:
             - cargo_fetch
       - test_ignored:
