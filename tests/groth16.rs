@@ -1,3 +1,7 @@
+// All those tests depend on the `DummyEngine`, SupraSeal is only implemented for BLS12, hence the
+// tests are disabled for SupraSeal.
+#![cfg(not(feature = "cuda-supraseal"))]
+
 use ff::{Field, PrimeField};
 use group::{Curve, Group};
 use rand_core::SeedableRng;
