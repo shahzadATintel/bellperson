@@ -1,3 +1,5 @@
+mod util;
+
 use bellperson::gadgets::num::AllocatedNum;
 use bellperson::groth16::{
     aggregate::{
@@ -428,6 +430,10 @@ fn generate_proof<R: SeedableRng + RngCore>(
         public_product: Some(product),
         witness_input: Some(w),
     };
+
+    #[cfg(feature = "cuda-supraseal")]
+    let p = &util::supraseal::supraseal_params(p.clone());
+
     (create_random_proof(c, p, &mut rng).unwrap(), statement)
 }
 
@@ -464,6 +470,9 @@ fn test_groth16_aggregation_inner(version: AggregateVersion) {
 
     // Prepare the verification key (for proof verification)
     let pvk = prepare_verifying_key(&params.vk);
+
+    #[cfg(feature = "cuda-supraseal")]
+    let params = util::supraseal::supraseal_params(params);
 
     println!("Creating proofs...");
 
@@ -662,6 +671,9 @@ fn test_groth16_aggregation_mimc_inner(version: AggregateVersion) {
     // Prepare the verification key (for proof verification)
     let pvk = prepare_verifying_key(&params.vk);
 
+    #[cfg(feature = "cuda-supraseal")]
+    let params = util::supraseal::supraseal_params(params);
+
     // Generate parameters for inner product aggregation
     // first generic SRS then specialized to the correct size
     let generic = setup_fake_srs(&mut rng, NUM_PROOFS_TO_AGGREGATE);
@@ -768,6 +780,9 @@ fn test_groth16_aggregate_versions() {
 
     // Prepare the verification key (for proof verification)
     let pvk = prepare_verifying_key(&params.vk);
+
+    #[cfg(feature = "cuda-supraseal")]
+    let params = util::supraseal::supraseal_params(params);
 
     println!("Creating proofs...");
 

@@ -221,6 +221,9 @@ impl<E: Engine> Proof<E> {
     }
 }
 
+// As most tests are about the parameter serialization, hence it doesn't matter for SupraSeal, as
+// there the parameter handling in a different code base.
+#[cfg(not(feature = "cuda-supraseal"))]
 #[cfg(test)]
 mod test_with_bls12_381 {
     use std::ops::MulAssign;
@@ -334,79 +337,5 @@ mod test_with_bls12_381 {
             let de_proof: Proof<Bls12> = deserialize(&serialized_proof).unwrap();
             assert_eq!(de_proof, proof);
         }
-    }
-
-    #[test]
-    fn supraseal() {
-        env_logger::try_init().ok();
-
-        struct MySillyCircuit<Scalar: PrimeField> {
-            a: Option<Scalar>,
-            b: Option<Scalar>,
-        }
-
-        impl<Scalar: PrimeField> Circuit<Scalar> for MySillyCircuit<Scalar> {
-            fn synthesize<CS: ConstraintSystem<Scalar>>(
-                self,
-                cs: &mut CS,
-            ) -> Result<(), SynthesisError> {
-                let a = cs.alloc(|| "a", || self.a.ok_or(SynthesisError::AssignmentMissing))?;
-                let b = cs.alloc(|| "b", || self.b.ok_or(SynthesisError::AssignmentMissing))?;
-                let c = cs.alloc_input(
-                    || "c",
-                    || {
-                        let mut a = self.a.ok_or(SynthesisError::AssignmentMissing)?;
-                        let b = self.b.ok_or(SynthesisError::AssignmentMissing)?;
-
-                        a.mul_assign(&b);
-                        Ok(a)
-                    },
-                )?;
-
-                cs.enforce(|| "a*b=c", |lc| lc + a, |lc| lc + b, |lc| lc + c);
-
-                Ok(())
-            }
-        }
-
-        let rng = &mut StdRng::seed_from_u64(1234);
-
-        let groth_params =
-            generate_random_parameters::<Bls12, _, _>(MySillyCircuit { a: None, b: None }, rng)
-                .unwrap();
-
-        let pvk = prepare_verifying_key::<Bls12>(&groth_params.vk);
-
-        let mut params_file =
-            std::fs::File::create("params.bin").expect("failed to create parameters file");
-        groth_params
-            .write(&mut params_file)
-            .expect("failed to write out srs");
-
-        #[cfg(not(feature = "cuda-supraseal"))]
-        let params =
-            crate::groth16::Parameters::build_mapped_parameters("params.bin".into(), false)
-                .expect("failed to read srs");
-
-        #[cfg(feature = "cuda-supraseal")]
-        let params = crate::groth16::SuprasealParameters::<Bls12>::new("params.bin".into())
-            .expect("failed to read srs");
-
-        let a = Fr::random(&mut *rng);
-        let b = Fr::random(&mut *rng);
-        let mut c = a;
-        c.mul_assign(&b);
-
-        let proof = create_random_proof(
-            MySillyCircuit {
-                a: Some(a),
-                b: Some(b),
-            },
-            &params,
-            rng,
-        )
-        .unwrap();
-
-        assert!(verify_proof(&pvk, &proof, &[c]).unwrap());
     }
 }
