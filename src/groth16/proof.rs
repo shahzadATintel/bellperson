@@ -237,7 +237,7 @@ mod test_with_bls12_381 {
     use bincode::{deserialize, serialize};
     use blstrs::{Bls12, Scalar as Fr};
     use ff::{Field, PrimeField};
-    use rand::{rngs::StdRng, thread_rng, SeedableRng};
+    use rand::thread_rng;
 
     #[test]
     fn test_size() {
