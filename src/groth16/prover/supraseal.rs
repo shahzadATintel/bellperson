@@ -74,9 +74,8 @@ where
     let mut input_assignments_ref = Vec::with_capacity(num_circuits);
     let mut aux_assignments_ref = Vec::with_capacity(num_circuits);
     for i in 0..num_circuits {
-        input_assignments_ref
-            .push(input_assignments_no_repr[i].as_ptr() as *const _ as *const E::Fr);
-        aux_assignments_ref.push(aux_assignments_no_repr[i].as_ptr() as *const _ as *const E::Fr);
+        input_assignments_ref.push(input_assignments_no_repr[i].as_ptr());
+        aux_assignments_ref.push(aux_assignments_no_repr[i].as_ptr());
     }
 
     let mut a_ref = Vec::with_capacity(num_circuits);
@@ -112,6 +111,7 @@ where
         provers[0].a_aux_density.bv.as_raw_slice(),
         provers[0].b_aux_density.bv.as_raw_slice(),
         a_aux_density_total,
+        b_input_density_total,
         b_aux_density_total,
         num_circuits,
         r_s.as_slice(),
