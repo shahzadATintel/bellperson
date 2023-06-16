@@ -2,11 +2,6 @@
 //!
 //! [Groth16]: https://eprint.iacr.org/2016/260
 
-// The `DummyEngine` currently only works on the CPU as G1/G2 is using `Fr` and `Fr` isn't
-// supported by the GPU kernels
-#[cfg(not(any(feature = "cuda", feature = "cuda-supraseal", feature = "opencl")))]
-mod tests;
-
 pub mod aggregate;
 #[cfg(not(feature = "cuda-supraseal"))]
 mod ext;
