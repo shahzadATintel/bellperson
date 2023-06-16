@@ -212,7 +212,7 @@ impl<Scalar: PrimeField> ConstraintSystem<Scalar> for ProvingAssignment<Scalar> 
     }
 }
 
-pub fn create_random_proof_batch_priority<E, C, R, P: ParameterSource<E>>(
+pub(super) fn create_random_proof_batch_priority<E, C, R, P: ParameterSource<E>>(
     circuits: Vec<C>,
     params: P,
     rng: &mut R,
@@ -238,7 +238,7 @@ where
 
 /// creates a batch of proofs where the randomization vector is set to zero.
 /// This allows for optimization of proving.
-pub fn create_proof_batch_priority_nonzk<E, C, P: ParameterSource<E>>(
+pub(super) fn create_proof_batch_priority_nonzk<E, C, P: ParameterSource<E>>(
     circuits: Vec<C>,
     params: P,
     priority: bool,
@@ -255,7 +255,7 @@ where
 
 /// creates a batch of proofs where the randomization vector is already
 /// predefined
-pub fn create_proof_batch_priority<E, C, P: ParameterSource<E>>(
+pub(super) fn create_proof_batch_priority<E, C, P: ParameterSource<E>>(
     circuits: Vec<C>,
     params: P,
     r_s: Vec<E::Fr>,
