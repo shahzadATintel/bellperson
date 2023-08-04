@@ -20,7 +20,7 @@ use crate::groth16::{
     multiscalar::{par_multiscalar, MultiscalarPrecomp, ScalarList},
     PreparedVerifyingKey,
 };
-use crate::SynthesisError;
+use bellpepper_core::SynthesisError;
 
 use std::default::Default;
 use std::ops::{AddAssign, MulAssign, SubAssign};

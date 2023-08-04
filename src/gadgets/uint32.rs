@@ -3,7 +3,7 @@
 
 use ff::PrimeField;
 
-use crate::{ConstraintSystem, LinearCombination, SynthesisError};
+use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError};
 
 use super::boolean::{AllocatedBit, Boolean};
 

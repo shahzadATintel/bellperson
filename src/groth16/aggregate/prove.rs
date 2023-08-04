@@ -19,7 +19,7 @@ use super::{
     ProverSRSInputAggregation, TippMippProof,
 };
 use crate::groth16::{aggregate::AggregateVersion, multiscalar::*, Proof};
-use crate::SynthesisError;
+use bellpepper_core::SynthesisError;
 use pairing::{Engine, MultiMillerLoop};
 
 /// Aggregate `n` zkSnark proofs, where `n` must be a power of two.

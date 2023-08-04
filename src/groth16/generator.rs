@@ -13,7 +13,10 @@ use rand_core::RngCore;
 use super::{Parameters, VerifyingKey};
 
 use crate::domain::EvaluationDomain;
-use crate::{gpu, Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
+use crate::gpu;
+use bellpepper_core::{
+    Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable,
+};
 use ec_gpu_gen::threadpool::Worker;
 
 /// Generates a random common reference string for

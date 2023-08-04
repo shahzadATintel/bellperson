@@ -10,7 +10,7 @@ use ff::PrimeField;
 use super::boolean::Boolean;
 use super::multieq::MultiEq;
 use super::uint32::UInt32;
-use crate::{ConstraintSystem, SynthesisError};
+use bellpepper_core::{ConstraintSystem, SynthesisError};
 
 #[allow(clippy::unreadable_literal)]
 const ROUND_CONSTANTS: [u32; 64] = [

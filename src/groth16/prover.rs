@@ -10,10 +10,12 @@ use rayon::prelude::*;
 
 use super::{ParameterSource, Proof};
 use crate::domain::EvaluationDomain;
-use crate::gpu::{GpuName, LockedFftKernel, LockedMultiexpKernel};
+use crate::gpu::{GpuError, GpuName, LockedFftKernel, LockedMultiexpKernel};
+use crate::lc::eval_with_trackers;
 use crate::multiexp::multiexp;
-use crate::{
-    Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable, BELLMAN_VERSION,
+use crate::BELLMAN_VERSION;
+use bellpepper_core::{
+    Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable,
 };
 use ec_gpu_gen::multiexp_cpu::{DensityTracker, FullDensity};
 use ec_gpu_gen::threadpool::{Worker, THREAD_POOL};
@@ -149,7 +151,8 @@ impl<Scalar: PrimeField> ConstraintSystem<Scalar> for ProvingAssignment<Scalar> 
         let b_input_density = &mut self.b_input_density;
         let b_aux_density = &mut self.b_aux_density;
 
-        let a_res = a.eval(
+        let a_res = eval_with_trackers(
+            &a,
             // Inputs have full density in the A query
             // because there are constraints of the
             // form x * 0 = 0 for each input.
@@ -159,7 +162,8 @@ impl<Scalar: PrimeField> ConstraintSystem<Scalar> for ProvingAssignment<Scalar> 
             aux_assignment,
         );
 
-        let b_res = b.eval(
+        let b_res = eval_with_trackers(
+            &b,
             Some(b_input_density),
             Some(b_aux_density),
             input_assignment,
@@ -171,8 +175,6 @@ impl<Scalar: PrimeField> ConstraintSystem<Scalar> for ProvingAssignment<Scalar> 
             // though there is an (beta)A + (alpha)B + C
             // query for all aux variables.
             // However, that query has full density.
-            None,
-            None,
             input_assignment,
             aux_assignment,
         );
@@ -565,20 +567,20 @@ where
                 g_a.add_assign(&vk.alpha_g1);
                 let mut g_b = vk.delta_g2.mul(s);
                 g_b.add_assign(&vk.beta_g2);
-                let mut a_answer = a_inputs.wait()?;
-                a_answer.add_assign(&a_aux.wait()?);
+                let mut a_answer = a_inputs.wait().map_err(GpuError::from)?;
+                a_answer.add_assign(&a_aux.wait().map_err(GpuError::from)?);
                 g_a.add_assign(&a_answer);
                 a_answer.mul_assign(s);
                 let mut g_c = a_answer;
 
-                let mut b2_answer = b_g2_inputs.wait()?;
-                b2_answer.add_assign(&b_g2_aux.wait()?);
+                let mut b2_answer = b_g2_inputs.wait().map_err(GpuError::from)?;
+                b2_answer.add_assign(&b_g2_aux.wait().map_err(GpuError::from)?);
 
                 g_b.add_assign(&b2_answer);
 
                 if let Some((b_g1_inputs, b_g1_aux)) = b_g1_inputs_aux_opt {
-                    let mut b1_answer = b_g1_inputs.wait()?;
-                    b1_answer.add_assign(&b_g1_aux.wait()?);
+                    let mut b1_answer = b_g1_inputs.wait().map_err(GpuError::from)?;
+                    b1_answer.add_assign(&b_g1_aux.wait().map_err(GpuError::from)?);
                     b1_answer.mul_assign(r);
                     g_c.add_assign(&b1_answer);
                     let mut rs = r;
@@ -588,8 +590,8 @@ where
                     g_c.add_assign(&vk.beta_g1.mul(r));
                 }
 
-                g_c.add_assign(&h.wait()?);
-                g_c.add_assign(&l.wait()?);
+                g_c.add_assign(&h.wait().map_err(GpuError::from)?);
+                g_c.add_assign(&l.wait().map_err(GpuError::from)?);
 
                 Ok(Proof {
                     a: g_a.to_affine(),

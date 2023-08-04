@@ -7,7 +7,7 @@ use pairing::{Engine, MultiMillerLoop};
 use serde::{Deserialize, Serialize};
 
 use crate::groth16::aggregate::{commit, srs};
-use crate::SynthesisError;
+use bellpepper_core::SynthesisError;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AggregateProofAndInstance<E: Engine>

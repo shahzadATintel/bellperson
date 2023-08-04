@@ -7,7 +7,7 @@
 use ff::PrimeField;
 
 use super::{boolean::Boolean, multieq::MultiEq, uint32::UInt32};
-use crate::{ConstraintSystem, SynthesisError};
+use bellpepper_core::{ConstraintSystem, SynthesisError};
 
 /*
 2.1.  Parameters

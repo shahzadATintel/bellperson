@@ -5,7 +5,7 @@ use ff::PrimeField;
 use super::boolean::Boolean;
 use super::num::{AllocatedNum, Num};
 use super::Assignment;
-use crate::{ConstraintSystem, SynthesisError};
+use bellpepper_core::{ConstraintSystem, SynthesisError};
 
 /// Takes a sequence of booleans and exposes them as compact
 /// public inputs

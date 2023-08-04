@@ -1,4 +1,5 @@
-use bellperson::gadgets::num::AllocatedNum;
+use bellpepper_core::num::AllocatedNum;
+use bellpepper_core::{Circuit, ConstraintSystem, SynthesisError};
 use bellperson::groth16::{
     aggregate::{
         aggregate_proofs, setup_fake_srs, verify_aggregate_proof, AggregateProof, AggregateVersion,
@@ -7,7 +8,6 @@ use bellperson::groth16::{
     create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof,
     verify_proofs_batch, Parameters, Proof,
 };
-use bellperson::{Circuit, ConstraintSystem, SynthesisError};
 use blstrs::{Bls12, Scalar as Fr};
 use ff::{Field, PrimeField};
 use group::{Curve, Group};

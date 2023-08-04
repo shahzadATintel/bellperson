@@ -149,10 +149,9 @@ pub mod groth16;
 pub mod multiexp;
 pub mod util_cs;
 
-mod lc;
-pub use lc::{Index, LinearCombination, Variable};
-mod constraint_system;
-pub use constraint_system::{Circuit, ConstraintSystem, Namespace, SynthesisError};
+pub(crate) mod lc;
+pub use bellpepper_core::{Circuit, ConstraintSystem, Namespace, SynthesisError};
+pub use bellpepper_core::{Index, LinearCombination, Variable};
 
 pub const BELLMAN_VERSION: &str = env!("CARGO_PKG_VERSION");
 

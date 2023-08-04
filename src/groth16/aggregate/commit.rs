@@ -31,7 +31,7 @@ use group::{prime::PrimeCurveAffine, Curve};
 use rayon::prelude::*;
 
 use crate::groth16::aggregate::inner_product;
-use crate::SynthesisError;
+use bellpepper_core::SynthesisError;
 use pairing::{Engine, MultiMillerLoop};
 
 /// Key is a generic commitment key that is instanciated with g and h as basis,

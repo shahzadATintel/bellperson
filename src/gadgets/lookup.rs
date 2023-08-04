@@ -5,7 +5,7 @@ use ff::PrimeField;
 use super::boolean::Boolean;
 use super::num::{AllocatedNum, Num};
 use super::*;
-use crate::ConstraintSystem;
+use bellpepper_core::ConstraintSystem;
 
 // Synthesize the constants for each base pattern.
 fn synth<'a, Scalar: PrimeField, I>(window_size: usize, constants: I, assignment: &mut [Scalar])

@@ -1,3 +1,4 @@
+use bellpepper_core::SynthesisError;
 use ec_gpu_gen::EcError;
 
 #[derive(thiserror::Error, Debug)]
@@ -14,3 +15,10 @@ pub enum GpuError {
 }
 
 pub type GpuResult<T> = std::result::Result<T, GpuError>;
+
+impl From<GpuError> for SynthesisError {
+    fn from(e: GpuError) -> Self {
+        // inspired by the commenct on MalformedProofs
+        SynthesisError::MalformedProofs(format!("Encountered a GPU Error: {}", e))
+    }
+}

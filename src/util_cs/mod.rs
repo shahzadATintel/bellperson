@@ -3,7 +3,7 @@ use ff::PrimeField;
 
 pub mod bench_cs;
 pub mod metric_cs;
-pub mod test_cs;
+pub use bellpepper_core::test_cs;
 pub mod witness_cs;
 
 pub type Constraint<Scalar> = (

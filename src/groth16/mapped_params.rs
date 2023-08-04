@@ -1,7 +1,7 @@
 use group::{prime::PrimeCurveAffine, UncompressedEncoding};
 use pairing::MultiMillerLoop;
 
-use crate::SynthesisError;
+use bellpepper_core::SynthesisError;
 
 #[cfg(not(target_arch = "wasm32"))]
 use memmap2::Mmap;

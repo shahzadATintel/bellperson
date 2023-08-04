@@ -5,7 +5,7 @@ use pairing::{Engine, MillerLoopResult, MultiMillerLoop};
 use rand_core::RngCore;
 use rayon::prelude::*;
 
-use crate::SynthesisError;
+use bellpepper_core::SynthesisError;
 use std::ops::Mul;
 use std::sync::{
     atomic::{AtomicBool, Ordering::SeqCst},

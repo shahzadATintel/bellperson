@@ -4,7 +4,7 @@ use pairing::{MillerLoopResult, MultiMillerLoop};
 use rayon::prelude::*;
 
 use crate::groth16::multiscalar::*;
-use crate::SynthesisError;
+use bellpepper_core::SynthesisError;
 
 /// Returns the miller loop evaluated on inputs, i.e.
 /// e(l_1,r_1)e(l_2,r_2)...
