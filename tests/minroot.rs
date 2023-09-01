@@ -1,6 +1,8 @@
 extern crate ff;
 extern crate rand;
 
+mod util;
+
 use ff::Field;
 
 // For randomness (during paramgen and proof generation)
@@ -180,6 +182,9 @@ fn minroot_test() {
     // Prepare the verification key (for proof verification)
     let pvk = prepare_verifying_key(&params.vk);
 
+    #[cfg(feature = "cuda-supraseal")]
+    let params = util::supraseal::supraseal_params(params);
+
     let mut proof_vec = vec![];
     let mut proofs = vec![];
     let mut images = vec![];
@@ -242,6 +247,9 @@ fn minroot_aggregate_proof_inner(version: AggregateVersion) {
 
     // verification key for indivdual verification of proof
     let pvk = prepare_verifying_key(&params.vk);
+
+    #[cfg(feature = "cuda-supraseal")]
+    let params = util::supraseal::supraseal_params(params);
 
     let mut xl = <Bls12 as Engine>::Fr::random(&mut rng);
     let mut xr = <Bls12 as Engine>::Fr::random(&mut rng);

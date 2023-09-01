@@ -1,3 +1,5 @@
+mod util;
+
 // For randomness (during paramgen and proof generation)
 use rand::thread_rng;
 
@@ -178,6 +180,9 @@ fn test_mimc() {
     // Prepare the verification key (for proof verification)
     let pvk = prepare_verifying_key(&params.vk);
 
+    #[cfg(feature = "cuda-supraseal")]
+    let params = util::supraseal::supraseal_params(params);
+
     println!("Creating proofs...");
 
     // Let's benchmark stuff!
@@ -268,8 +273,6 @@ fn test_mimc() {
 
     // batch verification
     {
-        let pvk = prepare_verifying_key(&params.vk);
-
         let start = Instant::now();
         let proofs: Vec<_> = proofs.iter().collect();
         let valid = verify_proofs_batch(&pvk, &mut rand::rngs::OsRng, &proofs, &images).unwrap();

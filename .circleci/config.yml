@@ -11,7 +11,7 @@ parameters:
 executors:
   default:
     machine:
-      image: ubuntu-2004-cuda-11.2:202103-01
+      image: linux-cuda-12:2023.05.1
     working_directory: ~/gpuci
     resource_class: gpu.nvidia.medium
   cpu:
@@ -253,6 +253,11 @@ workflows:
           name: "Test CUDA/OpenCL (OpenCL at run-time)"
           cargo-args: "--release --features cuda,opencl"
           framework: opencl
+          requires:
+            - cargo_fetch
+      - test:
+          name: "Test SupraSeal"
+          cargo-args: "--release --features cuda-supraseal"
           requires:
             - cargo_fetch
       - test_ignored:

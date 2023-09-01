@@ -15,6 +15,8 @@
 //! - Expose `hash` as a public input using multiscalar packing.
 //!
 //! ```no_run
+//! # #[cfg(not(feature = "cuda-supraseal"))]
+//! # {
 //! use bellperson::{
 //!     gadgets::{
 //!         boolean::{AllocatedBit, Boolean},
@@ -125,6 +127,7 @@
 //!
 //! // Check the proof!
 //! assert!(groth16::verify_proof(&pvk, &proof, &inputs).unwrap());
+//! # }
 //! ```
 //!
 //! # Roadmap

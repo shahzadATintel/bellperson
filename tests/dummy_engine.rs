@@ -17,8 +17,6 @@ use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 const MODULUS_R: Wrapping<u32> = Wrapping(64513);
 const R: u32 = 1;
-#[cfg(any(feature = "cuda", feature = "opencl"))]
-const R2: u32 = 1;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Fr(Wrapping<u32>);
@@ -380,7 +378,7 @@ impl ec_gpu::GpuName for Fr {
 }
 
 #[cfg(not(any(feature = "cuda", feature = "opencl")))]
-impl crate::gpu::GpuName for Fr {}
+impl bellperson::gpu::GpuName for Fr {}
 
 impl MillerLoopResult for Fr {
     type Gt = Fr;
