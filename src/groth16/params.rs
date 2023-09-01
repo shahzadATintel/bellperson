@@ -432,7 +432,7 @@ where
     ) -> Result<(Self::G2Builder, Self::G2Builder), SynthesisError>;
     // This is a bit of a hack. For the SupraSeal code, we need access to SRS (Groth parameters)
     // that were read in on the C++ side. For SupraSeal we just pass it on as an opaque reference.
-    // This code path should only every get exectuted when SupraSeal is used.
+    // This code path should only ever get exectuted when SupraSeal is used.
     // It's part of the trait, so that we don't need to change a lot of the APIs, but instead can
     // just pass on the `ParameterSource` trait.
     #[cfg(feature = "cuda-supraseal")]
