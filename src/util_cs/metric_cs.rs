@@ -136,7 +136,7 @@ impl<Scalar: PrimeField> MetricCS<Scalar> {
         let negone = -Scalar::ONE;
 
         let powers_of_two = (0..Scalar::NUM_BITS)
-            .map(|i| Scalar::from(2u64).pow_vartime(&[u64::from(i)]))
+            .map(|i| Scalar::from(2u64).pow_vartime([u64::from(i)]))
             .collect::<Vec<_>>();
 
         let pp = |s: &mut String, lc: &LinearCombination<Scalar>| {

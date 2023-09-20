@@ -238,7 +238,7 @@ impl Field for Fr {
         if <Fr as Field>::is_zero(self).into() {
             CtOption::new(Self::default(), Choice::from(0))
         } else {
-            let inv = self.pow_vartime(&[(MODULUS_R.0 as u64) - 2]);
+            let inv = self.pow_vartime([(MODULUS_R.0 as u64) - 2]);
             CtOption::new(inv, Choice::from(1))
         }
     }

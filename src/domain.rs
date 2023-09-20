@@ -153,7 +153,7 @@ impl<F: PrimeField + gpu::GpuName> EvaluationDomain<F> {
         worker.scope(self.coeffs.len(), |scope, chunk| {
             for (i, v) in self.coeffs.chunks_mut(chunk).enumerate() {
                 scope.execute(move || {
-                    let mut u = g.pow_vartime(&[(i * chunk) as u64]);
+                    let mut u = g.pow_vartime([(i * chunk) as u64]);
                     for v in v.iter_mut() {
                         *v *= u;
                         u *= g;
@@ -200,7 +200,7 @@ impl<F: PrimeField + gpu::GpuName> EvaluationDomain<F> {
     /// This evaluates t(tau) for this domain, which is
     /// tau^m - 1 for these radix-2 domains.
     pub fn z(&self, tau: &F) -> F {
-        let tmp = tau.pow_vartime(&[self.coeffs.len() as u64]);
+        let tmp = tau.pow_vartime([self.coeffs.len() as u64]);
         tmp - <F as Field>::ONE
     }
 
@@ -280,9 +280,9 @@ fn best_fft<F: PrimeField + gpu::GpuName>(
     let log_cpus = worker.log_num_threads();
     for ((a, omega), log_n) in coeffs.iter_mut().zip(omegas.iter()).zip(log_ns.iter()) {
         if *log_n <= log_cpus {
-            fft_cpu::serial_fft::<F>(*a, omega, *log_n);
+            fft_cpu::serial_fft::<F>(a, omega, *log_n);
         } else {
-            fft_cpu::parallel_fft::<F>(*a, worker, omega, *log_n, log_cpus);
+            fft_cpu::parallel_fft::<F>(a, worker, omega, *log_n, log_cpus);
         }
     }
 }

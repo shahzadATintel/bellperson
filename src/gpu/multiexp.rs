@@ -15,15 +15,14 @@ use crate::gpu::GpuName;
 
 pub fn get_cpu_utilization() -> f64 {
     env::var("BELLMAN_CPU_UTILIZATION")
-        .map_or(0f64, |v| match v.parse() {
-            Ok(val) => val,
-            Err(_) => {
+        .map_or(0f64, |v| match v.parse::<f64>() {
+            Ok(val) if val.is_finite() => val,
+            _ => {
                 error!("Invalid BELLMAN_CPU_UTILIZATION! Defaulting to 0...");
                 0f64
             }
         })
-        .max(0f64)
-        .min(1f64)
+        .clamp(0f64, 1f64)
 }
 
 /// Set the correct enviornment variables for a custom GPU.

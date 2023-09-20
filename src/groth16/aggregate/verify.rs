@@ -105,7 +105,7 @@ where
     // SUM a^i = (1 - a^n) / (1 - a) = -(1-a^n)/-(1-a)
     // = (a^n - 1) / (a - 1)
     info!("checking aggregate pairing");
-    let mut r_sum = r.pow_vartime(&[public_inputs.len() as u64]);
+    let mut r_sum = r.pow_vartime([public_inputs.len() as u64]);
     r_sum.sub_assign(&E::Fr::ONE);
     let b = (*r - E::Fr::ONE).invert().unwrap();
     r_sum.mul_assign(&b);
@@ -252,7 +252,7 @@ where
         .write(&transcript_new)
         .into_challenge();
 
-    let r_f = (*r).pow_vartime(&[1u64]);
+    let r_f = (*r).pow_vartime([1u64]);
 
     //    let pairing_checks_instance: PairingChecks<E,R> = PairingChecks::new(rng2);
     let pairing_checks: PairingChecks<E, R> = PairingChecks::new(rng);
@@ -332,7 +332,7 @@ where
         // SUM a^i = (1 - a^n) / (1 - a) = -(1-a^n)/-(1-a)
         // = (a^n - 1) / (a - 1)
         info!("checking aggregate pairing");
-        let mut r_sum = r.pow_vartime(&[ip_verifier_srs.n as u64]);
+        let mut r_sum = r.pow_vartime([ip_verifier_srs.n as u64]);
         r_sum.sub_assign(&E::Fr::ONE);
         let b = (*r - E::Fr::ONE).invert().unwrap();
         r_sum.mul_assign(&b);
@@ -367,7 +367,7 @@ where
                     d *= &r.invert().unwrap();
                     // d = (1/r) (f(r) - a0 ) + r^(n-1) an
                     let n_neg_one = (ip_verifier_srs.n - 1) as u64;
-                    d += public_outputs[i] * r.pow_vartime(&[n_neg_one]) ;
+                    d += public_outputs[i] * r.pow_vartime([n_neg_one]) ;
 
                     // pk_ic_in = S_(i + m + 1)^d
                     let pk_ic_in = pvk.ic[1 + i + public_inputs.len()] * d;
@@ -890,7 +890,7 @@ pub fn verify_kzg_w<E, R>(
     // compute in parallel f(z) and z^n and then combines into f_w(z) = z^n * f(z)
     par! {
         let fz = polynomial_evaluation_product_form_from_transcript(challenges, kzg_challenge, r_shift),
-        let zn = kzg_challenge.pow_vartime(&[v_srs.n as u64])
+        let zn = kzg_challenge.pow_vartime([v_srs.n as u64])
     };
 
     let mut fwz = fz;

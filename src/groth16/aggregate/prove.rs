@@ -253,7 +253,7 @@ where
                 &srs.g_alpha_powers_table,
                 DensePolynomial::from_coeffs(poly_f_j.clone()),
                 poly_eval,
-                &*r,
+                &r,
             )
             .unwrap(),
         );
@@ -654,7 +654,7 @@ where
         // this computes f(z)
         let fz = polynomial_evaluation_product_form_from_transcript(transcript, kzg_challenge, r_shift),
         // this computes the "shift" z^n
-        let zn = kzg_challenge.pow_vartime(&[n as u64])
+        let zn = kzg_challenge.pow_vartime([n as u64])
     };
     // this computes f_w(z) by multiplying by zn
     let mut fwz = fz;
