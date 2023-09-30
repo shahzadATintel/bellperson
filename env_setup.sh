@@ -4,4 +4,5 @@ export BELLMAN_CPU_UTILIZATION=0
 export BELLMAN_VERIFIER=gpu
 export RUST_GPU_TOOLS_CUSTOM_GPU="Tesla V100:5120"
 export BELLMAN_GPU_FRAMEWORK=cuda
+export BELLMAN_NO_GPU=1
 rustup override set 1.66.0
