@@ -1,3 +1,4 @@
+use std::time::Instant;
 use std::convert::TryInto;
 use std::ops::AddAssign;
 
@@ -368,11 +369,15 @@ mod tests {
                 let table = precompute_fixed_window::<G1Affine>(&points, *window_size);
 
                 let naive_result = multiscalar_naive(&points, &scalars);
+                println!("Length of scalars: {}", scalars.len());
+                let start_time = Instant::now();
                 let fast_result = par_multiscalar::<&Getter<G1Affine>, G1Affine>(
                     &ScalarList::Slice(&scalars),
                     &table,
                     std::mem::size_of::<<Fr as PrimeField>::Repr>() * 8,
                 );
+                let duration = start_time.elapsed();
+                println!("par_multiscalar took: {:?}", duration);
 
                 assert_eq!(naive_result, fast_result);
             }

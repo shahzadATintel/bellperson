@@ -1,0 +1,1 @@
+RUSTFLAGS="-C target-cpu=native" cargo test --release --all --features cuda,opencl
