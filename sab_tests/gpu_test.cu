@@ -36,7 +36,7 @@ int main() {
     cudaSetDevice(0);
 
     // Allocate 8GB of GPU RAM
-    const size_t dataSize = 8L * 1024 * 1024 * 1024;  // 8GB
+    const size_t dataSize = 18L * 1024 * 1024 * 1024;  // 8GB
     float *d_data;
     cudaError_t err = cudaMalloc(&d_data, dataSize);
     if (err != cudaSuccess) {
