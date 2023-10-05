@@ -35,8 +35,13 @@ int main() {
     // Set the device to the first GPU
     cudaSetDevice(0);
 
-    // Allocate 8GB of GPU RAM
-    const size_t dataSize = 18L * 1024 * 1024 * 1024;  // 8GB
+    // Ask the user for the amount of memory to allocate
+    float memoryInGB;
+    std::cout << "Enter the amount of memory to allocate (in GBs): ";
+    std::cin >> memoryInGB;
+
+    // Allocate the specified amount of GPU RAM
+    const size_t dataSize = static_cast<size_t>(memoryInGB * 1024 * 1024 * 1024);  // Convert GB to bytes
     float *d_data;
     cudaError_t err = cudaMalloc(&d_data, dataSize);
     if (err != cudaSuccess) {
