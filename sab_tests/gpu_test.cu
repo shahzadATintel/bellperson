@@ -3,11 +3,14 @@
 #include <chrono>
 
 // Define a simple kernel that does some computation
-__global__ void intensiveKernel(int n) {
+__global__ void intensiveKernel(float *data, int n) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     float f = idx;
     for(int i = 0; i < n; i++) {
         f = sinf(f) * cosf(f) * tanf(f);  // Intensive math operations
+        if (idx < n) {
+            data[idx] += f;  // Use the allocated memory to prevent it from being optimized away
+        }
     }
 }
 
@@ -32,12 +35,21 @@ int main() {
     // Set the device to the first GPU
     cudaSetDevice(0);
 
+    // Allocate 8GB of GPU RAM
+    const size_t dataSize = 8L * 1024 * 1024 * 1024;  // 8GB
+    float *d_data;
+    cudaError_t err = cudaMalloc(&d_data, dataSize);
+    if (err != cudaSuccess) {
+        std::cerr << "Failed to allocate GPU memory: " << cudaGetErrorString(err) << std::endl;
+        return 1;
+    }
+
     // Time the kernel execution
     auto start = std::chrono::high_resolution_clock::now();
 
     // Launch the kernel multiple times to ensure it runs for at least 5-10 minutes
     while (true) {
-        intensiveKernel<<<1000000, 256>>>(10000);  // Adjust the loop count inside the kernel if needed
+        intensiveKernel<<<1000000, 256>>>(d_data, dataSize / sizeof(float));  // Adjust the loop count inside the kernel if needed
         cudaDeviceSynchronize();
 
         auto now = std::chrono::high_resolution_clock::now();
@@ -47,6 +59,9 @@ int main() {
             break;
         }
     }
+
+    // Free the allocated GPU memory
+    cudaFree(d_data);
 
     std::cout << "Kernel execution complete." << std::endl;
 
