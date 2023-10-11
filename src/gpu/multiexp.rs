@@ -1,3 +1,4 @@
+use std::time::Instant;
 use std::env;
 use std::ops::AddAssign;
 use std::sync::{Arc, RwLock};
@@ -100,12 +101,17 @@ where
         skip: usize,
     ) -> EcResult<G::Curve> {
         // Bases are skipped by `self.1` elements, when converted from (Arc<Vec<G>>, usize) to Source
+        let mut acc = G::Curve::identity();
+        loop {
+        let start_time = Instant::now();
         // https://github.com/zkcrypto/bellman/blob/10c5010fd9c2ca69442dc9775ea271e286e776d8/src/multiexp.rs#L38
         let bases = &bases[skip..(skip + exps.len())];
         let exps = &exps[..];
 
         let cpu_n = ((exps.len() as f64) * get_cpu_utilization()) as usize;
         let n = exps.len() - cpu_n;
+        println!("Length of exps: {}", exps.len());
+        println!("Length of bases: {}", bases.len());
         let (cpu_bases, bases) = bases.split_at(cpu_n);
         let (cpu_exps, exps) = exps.split_at(cpu_n);
 
@@ -131,12 +137,15 @@ where
             .expect("only one ref left")
             .into_inner()
             .unwrap()?;
-        let mut acc = G::Curve::identity();
+
         for r in results {
             acc.add_assign(&r);
         }
 
         acc.add_assign(&cpu_acc.wait().unwrap());
+        let duration = start_time.elapsed();
+        println!("par_multiscalar took: {:?}", duration);
+        }
         Ok(acc)
     }
 }

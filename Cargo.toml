@@ -37,6 +37,7 @@ pairing = "0.23"
 blstrs = { version = "0.7.0", features = ["__private_bench"] }
 ec-gpu = { version = "0.2.0" }
 ec-gpu-gen = { version = "0.7.0" }
+backtrace = "0.3"
 
 
 fs2 = { version = "0.4.3", optional = true }

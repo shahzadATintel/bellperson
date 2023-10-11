@@ -227,6 +227,7 @@ where
 {
     let lock = GPULock::lock();
     let devices = lock.devices();
+    extern crate backtrace;
 
     let kernel = if priority {
         CpuGpuMultiexpKernel::create(&devices)
@@ -237,7 +238,10 @@ where
     match kernel {
         Ok(k) => {
             info!("GPU Multiexp kernel instantiated!");
+            let bt = backtrace::Backtrace::new();
+            println!("{:?}", bt);
             Some((k, lock))
+
         }
         Err(e) => {
             warn!("Cannot instantiate GPU Multiexp kernel! Error: {}", e);

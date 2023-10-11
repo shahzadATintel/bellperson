@@ -357,7 +357,7 @@ mod tests {
         ]);
 
         for _ in 0..50 {
-            for (num_inputs, window_size) in &[(10000, 4), (12, 1), (10, 1), (20, 2)] {
+            for (num_inputs, window_size) in &[(100000, 4), (100000, 1), (10, 1), (20, 2)] {
                 let points: Vec<G1Affine> = (0..*num_inputs)
                     .map(|_| G1Projective::random(&mut rng).to_affine())
                     .collect();
