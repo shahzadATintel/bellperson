@@ -56,16 +56,16 @@ pub fn test_parallel_prover() {
     // Higher prio circuit
     let c = DummyDemo {
         #[cfg(not(feature = "_coverage"))]
-        interations: 100_000,
+        interations: 1000_000,
         #[cfg(feature = "_coverage")]
-        interations: 100,
+        interations: 1000_000,
     };
     // Lower prio circuit
     let c2 = DummyDemo {
         #[cfg(not(feature = "_coverage"))]
-        interations: 500_000,
+        interations: 5000_000,
         #[cfg(feature = "_coverage")]
-        interations: 5000,
+        interations: 5000_000,
     };
 
     let params = generate_random_parameters::<Bls12, _, _>(c.clone(), rng).unwrap();
